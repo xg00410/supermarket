@@ -20,14 +20,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.supermarket.R
+import com.example.supermarket.data.FakeRepository
+import com.example.supermarket.model.StoreItem
 
-data class StoreItem(
-    val id: String,
-    val name: String,
-    val address: String,
-    val imageRes: Int? = null
-)
 
+/**
+ * 🏬 店舗一覧画面 / 店铺列表界面
+ * -----------------------------------------------------
+ * 功能说明（中日对照）：
+ * ・显示某都道府县内的所有店铺
+ * ・上方搜索栏支持输入「県名・市名・店舗名」模糊搜索
+ * ・输入“イオン”“東京”等时也能匹配对应结果
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreMapExpandedScreen(
@@ -36,7 +40,7 @@ fun StoreMapExpandedScreen(
     onStoreClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // 🌏 英文→日本語 地域名マップ / 英→日 区域映射
+    // 🌏 英文→日本语 地区映射 / 地域キーを日本語に変換
     val regionJpName = when (regionName) {
         "hokkaido" -> "北海道"
         "tohoku" -> "東北"
@@ -49,16 +53,44 @@ fun StoreMapExpandedScreen(
 
     var searchText by remember { mutableStateOf("") }
 
-    // 🔍 検索フィルタ / 模糊搜索：店名・住所・地域
+    // 🔍 智能搜索逻辑 / 検索強化版
     val filteredStores = remember(searchText, stores) {
-        if (searchText.isBlank()) stores
-        else stores.filter {
-            it.name.contains(searchText, ignoreCase = true) ||
-                    it.address.contains(searchText, ignoreCase = true) ||
-                    regionJpName.contains(searchText, ignoreCase = true)
+        if (searchText.isBlank()) {
+            stores
+        } else {
+            val keyword = searchText.trim()
+            val result = mutableSetOf<StoreItem>()
+
+            // 1️⃣ 店铺名、地址直接匹配
+            stores.forEach { store ->
+                if (store.name.contains(keyword, ignoreCase = true) ||
+                    store.address.contains(keyword, ignoreCase = true)
+                ) {
+                    result.add(store)
+                }
+            }
+
+            // 2️⃣ 根据 FakeRepository 检查其他区域的店铺（支持跨县搜索）
+            FakeRepository.getStores().forEach { store ->
+                if (store.name.contains(keyword, ignoreCase = true) ||
+                    store.address.contains(keyword, ignoreCase = true)
+                ) {
+                    result.add(
+                        StoreItem(
+                            id = store.id,
+                            name = store.name,
+                            address = store.address,
+                            imageRes = R.drawable.ic_store_placeholder
+                        )
+                    )
+                }
+            }
+
+            result.toList()
         }
     }
 
+    // 🧭 画面结构 / 画面構成
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -78,26 +110,18 @@ fun StoreMapExpandedScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🔍 検索ボックス / 搜索框
+            // 🔍 搜索栏 / 検索ボックス
             OutlinedTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                placeholder = { Text("店舗名・住所・地域名で検索") },
+                placeholder = { Text("都道府県・市・店舗名で検索") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (filteredStores.isEmpty()) {
-                // ❌ 該当なし / 无匹配结果
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("該当する店舗が見つかりません。")
-                }
-            } else {
-                // ✅ 店舗リスト / 店铺列表
+            // 🏬 店铺列表 / 店舗リスト
+            if (filteredStores.isNotEmpty()) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
@@ -106,11 +130,22 @@ fun StoreMapExpandedScreen(
                         StoreListCard(store = store, onClick = { onStoreClick(store.id) })
                     }
                 }
+            } else {
+                // ❌ 没有匹配结果 / 該当なし
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("該当する店舗が見つかりません。")
+                }
             }
         }
     }
 }
 
+/**
+ * 🏪 店铺卡片组件 / 店舗カードコンポーネント
+ */
 @Composable
 fun StoreListCard(
     store: StoreItem,
@@ -132,7 +167,7 @@ fun StoreListCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🖼 画像表示エリア / 图片区域
+            // 🖼 图片区域 / 画像エリア
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -151,7 +186,7 @@ fun StoreListCard(
                 }
             }
 
-            // 📋 店舗情報 / 店铺信息
+            // 📋 店铺信息 / 店舗情報
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)

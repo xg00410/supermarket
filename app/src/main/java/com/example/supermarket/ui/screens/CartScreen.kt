@@ -1,5 +1,5 @@
 package com.example.supermarket.ui.screens
-
+import androidx.navigation.NavController
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,10 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.supermarket.viewmodel.CartViewModel
+import com.example.supermarket.ui.components.BottomNavBar
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
+    navController: NavController,
     onBack: () -> Unit,
     onGoRoute: () -> Unit,
     cartViewModel: CartViewModel = viewModel()
@@ -31,7 +34,7 @@ fun CartScreen(
                     TextButton(onClick = onBack) { Text("戻る") }
                 }
             )
-        }
+        },bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier

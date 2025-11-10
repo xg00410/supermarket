@@ -11,6 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.supermarket.data.FakeRepository
 
+/**
+ * 🗾 都道府県選択画面 / 県域选择画面
+ * --------------------------------------------------------
+ * 功能说明（中日对照）：
+ * ・根据区域（region）显示该区域下的都道府县按钮
+ * ・上方可搜索「県名・城市名・店铺名」
+ * ・若输入店铺名或地址，系统会推断其所属的都道府县
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreRegionScreen(
@@ -18,7 +26,7 @@ fun StoreRegionScreen(
     onPrefectureClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // 🌏 英文→日本語 地域名マップ / 英→日 区域映射
+    // 🌏 区域英文→日文映射 / 英文キーを日本語名に変換
     val regionJpName = when (regionName) {
         "hokkaido" -> "北海道"
         "tohoku" -> "東北"
@@ -29,17 +37,40 @@ fun StoreRegionScreen(
         else -> regionName
     }
 
-    // 🔹 対応する都道府県リストを取得 / 获取该区域下的都道府县
+    // 🔹 获取该区域的都道府县列表 / 対応する都道府県リストを取得
     val prefectures = FakeRepository.getPrefecturesByRegion(regionName)
-
     var searchText by remember { mutableStateOf("") }
 
-    // 🔍 検索フィルタ / 检索过滤逻辑
+    // 🔍 智能搜索逻辑 / 検索ロジック強化版
     val filteredPrefectures = remember(searchText) {
-        if (searchText.isBlank()) prefectures
-        else prefectures.filter { it.contains(searchText, ignoreCase = true) }
+        if (searchText.isBlank()) {
+            prefectures
+        } else {
+            val keyword = searchText.trim()
+            val result = mutableSetOf<String>()
+
+            // 1️⃣ 按都道府县名直接匹配
+            result.addAll(prefectures.filter { it.contains(keyword, ignoreCase = true) })
+
+            // 2️⃣ 按店铺名或地址匹配
+            FakeRepository.getStores().forEach { store ->
+                if (store.name.contains(keyword, ignoreCase = true) ||
+                    store.address.contains(keyword, ignoreCase = true)
+                ) {
+                    // 若匹配到店铺 → 找出它所属的都道府县
+                    prefectures.forEach { pref ->
+                        if (store.address.contains(pref)) {
+                            result.add(pref)
+                        }
+                    }
+                }
+            }
+
+            result.toList()
+        }
     }
 
+    // 🧭 UI结构
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -59,11 +90,11 @@ fun StoreRegionScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🔍 検索ボックス / 搜索框
+            // 🔍 搜索栏 / 検索ボックス
             OutlinedTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                placeholder = { Text("都道府県を検索") },
+                placeholder = { Text("都道府県・店舗名で検索") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -75,27 +106,27 @@ fun StoreRegionScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // 🔹 都道府県リスト表示 / 都道府县列表显示
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(filteredPrefectures) { prefecture ->
-                    Button(
-                        onClick = { onPrefectureClick(prefecture) },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                    ) {
-                        Text(prefecture, style = MaterialTheme.typography.titleMedium)
+            // ✅ 都道府县按钮列表 / ボタンリスト
+            if (filteredPrefectures.isNotEmpty()) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(filteredPrefectures) { prefecture ->
+                        Button(
+                            onClick = { onPrefectureClick(prefecture) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(60.dp)
+                        ) {
+                            Text(prefecture, style = MaterialTheme.typography.titleMedium)
+                        }
                     }
                 }
-            }
-
-            // 🔹 結果なしメッセージ / 无结果提示
-            if (filteredPrefectures.isEmpty()) {
+            } else {
+                // ❌ 无结果提示 / 結果なしメッセージ
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

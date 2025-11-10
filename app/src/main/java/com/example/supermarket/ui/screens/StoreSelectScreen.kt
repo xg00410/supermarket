@@ -19,11 +19,21 @@ import androidx.compose.ui.unit.dp
 import com.example.supermarket.data.FakeRepository
 import com.example.supermarket.model.Store
 import androidx.compose.material3.Icon
+import androidx.navigation.NavController
 
-
+/**
+ * 🏪 店舗検索画面（現在地・キーワード対応）
+ * 店铺选择画面（支持当前位置与关键词搜索）
+ * -------------------------------------------------
+ * 功能说明（中日对照）：
+ * ・用户可通过输入「県名・市名・店舗名」进行搜索
+ * ・系统自动判断输入内容匹配的店铺
+ * ・可显示当前位置附近按钮（暂为占位）
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreSelectScreen(
+    navController: NavController,
     onStoreClick: (String) -> Unit,
     onSearchSubmit: (String) -> Unit,
     onNearbyClick: () -> Unit
@@ -31,20 +41,37 @@ fun StoreSelectScreen(
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
 
     val allStores = remember { FakeRepository.getStores() }
-    // 简单过滤：名字或地址包含关键字
-    val filteredStores by remember(searchText) {
-        mutableStateOf(
-            if (searchText.text.isBlank()) {
-                allStores
-            } else {
-                allStores.filter {
-                    it.name.contains(searchText.text, ignoreCase = true) ||
-                            it.address.contains(searchText.text, ignoreCase = true)
+
+    // 🔍 智能搜索逻辑 / スマート検索ロジック
+    val filteredStores = remember(searchText) {
+        val keyword = searchText.text.trim()
+        if (keyword.isBlank()) {
+            allStores
+        } else {
+            val matched = mutableSetOf<Store>()
+
+            // 1️⃣ 店铺名 / 地址直接匹配
+            allStores.forEach { store ->
+                if (store.name.contains(keyword, ignoreCase = true) ||
+                    store.address.contains(keyword, ignoreCase = true)
+                ) {
+                    matched.add(store)
                 }
             }
-        )
+
+            // 2️⃣ 匹配区域或都道府县
+            FakeRepository.regionMap.forEach { (regionKey, prefectures) ->
+                if (prefectures.any { it.contains(keyword, ignoreCase = true) }) {
+                    // 将属于该区域的所有店铺加入结果
+                    matched.addAll(FakeRepository.getStoresByRegion(regionKey))
+                }
+            }
+
+            matched.toList()
+        }
     }
 
+    // 🧭 UI结构 / 画面構成
     Scaffold(
         topBar = {
             TopAppBar(
@@ -60,7 +87,7 @@ fun StoreSelectScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 🔍 搜索+附近按钮 行
+            // 🔍 搜索栏 + 附近按钮
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -71,7 +98,7 @@ fun StoreSelectScreen(
                         .heightIn(min = 56.dp),
                     value = searchText,
                     onValueChange = { searchText = it },
-                    placeholder = { Text("店舗名 / 住所で検索") },
+                    placeholder = { Text("都道府県 / 店舗名 / 住所で検索") },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = "Search")
                     },
@@ -83,7 +110,6 @@ fun StoreSelectScreen(
                 FilledTonalButton(
                     onClick = {
                         onSearchSubmit(searchText.text)
-                        // 暂时我们本地filter就够了，不一定要额外交互
                     },
                     modifier = Modifier.height(56.dp)
                 ) {
@@ -91,7 +117,7 @@ fun StoreSelectScreen(
                 }
             }
 
-            // 📍 最近の店舗ボタン
+            // 📍 附近店铺按钮 / 現在地検索ボタン
             FilledTonalButton(
                 onClick = { onNearbyClick() },
                 modifier = Modifier.fillMaxWidth()
@@ -101,28 +127,40 @@ fun StoreSelectScreen(
                 Text("現在地の近くの店舗を探す")
             }
 
-
-            // 店舗リスト
+            // 📋 店铺列表 / 店舗リスト
             Text(
                 text = "店舗一覧",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredStores) { store ->
-                    StoreCard(
-                        store = store,
-                        onClick = { onStoreClick(store.id) }
-                    )
+            if (filteredStores.isEmpty()) {
+                // ❌ 无匹配结果 / 該当なし
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("該当する店舗が見つかりません。")
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredStores) { store ->
+                        StoreCard(
+                            store = store,
+                            onClick = { onStoreClick(store.id) }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * 🏬 店铺卡片组件 / 店舗カード
+ */
 @Composable
 private fun StoreCard(
     store: Store,
@@ -164,7 +202,7 @@ private fun StoreCard(
                     Text(
                         text = "約${it}m",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF388E3C) // 深绿色系
+                        color = Color(0xFF388E3C)
                     )
                 }
             }

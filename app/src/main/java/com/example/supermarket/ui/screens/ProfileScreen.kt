@@ -6,12 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
+import com.example.supermarket.ui.components.BottomNavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavController) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("マイページ") }) }
+        topBar = { TopAppBar(title = { Text("マイページ") }) },
+        bottomBar = { BottomNavBar(navController = navController) }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -19,7 +23,19 @@ fun ProfileScreen() {
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            Text("ここは個人ページです。")
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("ここは個人ページです。", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.STORE_SELECT) { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text("ログアウト")
+                }
+            }
         }
     }
 }
