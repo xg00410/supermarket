@@ -6,84 +6,57 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import com.example.supermarket.ui.components.AppIcon
-import com.example.supermarket.net.ApiClient
-import com.example.supermarket.net.ApiService
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
-import com.google.gson.Gson
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 
-
+/**
+ * 📝 RegisterScreen.kt
+ * --------------------------------------------
+ * 🇯🇵 新規登録画面：ユーザー情報を入力し、登録完了後登録成功画面へ。
+ * 🇨🇳 新规注册界面：输入用户信息，注册成功后跳转注册成功画面。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen(onRegisterSuccess: () -> Unit = {}) {
+fun RegisterScreen(
+    navController: NavController
+) {
     var userId by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
-    var firstName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("other") }
-    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf("") }
-
-    val scope = rememberCoroutineScope()
+    var email by remember { mutableStateOf("") }
 
     Scaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AppIcon(width = 280, height = 90)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(60.dp))
             Text("新規登録", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(value = userId, onValueChange = { userId = it }, label = { Text("ユーザーID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = lastName, onValueChange = { lastName = it }, label = { Text("姓") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = firstName, onValueChange = { firstName = it }, label = { Text("名") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("電話番号") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("メールアドレス") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("パスワード") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = userId, onValueChange = { userId = it }, label = { Text("ユーザーID") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("パスワード") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("メールアドレス") }, modifier = Modifier.fillMaxWidth())
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(onClick = {
-                scope.launch {
-                    try {
-                        val api = ApiClient.retrofit.create(ApiService::class.java)
-                        val json = Gson().toJson(
-                            mapOf(
-                                "user_id" to userId,
-                                "last_name" to lastName,
-                                "first_name" to firstName,
-                                "phone" to phone,
-                                "gender" to gender,
-                                "email" to email,
-                                "password" to password
-                            )
-                        )
-                        val requestBody = json.toRequestBody("application/json".toMediaTypeOrNull())
-                        val response = api.register(requestBody)
-
-                        if (response.status == "success") {
-                            message = "登録成功"
-                            onRegisterSuccess()
-                        } else {
-                            message = response.message ?: "登録失敗"
-                        }
-                    } catch (e: Exception) {
-                        message = "通信エラー: ${e.message}"
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    if (userId.isNotBlank() && password.isNotBlank()) {
+                        navController.navigate(Routes.REGISTER_SUCCESS)
                     }
-                }
-            }, modifier = Modifier.fillMaxWidth()) {
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("登録する")
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(message)
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = { navController.popBackStack() }) {
+                Text("戻る")
+            }
         }
     }
 }

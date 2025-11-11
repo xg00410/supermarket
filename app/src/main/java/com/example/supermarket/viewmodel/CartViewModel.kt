@@ -2,27 +2,32 @@ package com.example.supermarket.viewmodel
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import com.example.supermarket.model.Product
-import com.example.supermarket.model.CartItem
+import com.example.supermarket.models.CartItem
+import com.example.supermarket.models.Product
 
+/**
+ * 🧠 CartViewModel.kt
+ * --------------------------------------------------------
+ * 📘 カートの状態管理クラス
+ * 购物车状态管理类（负责增减、删除、统计数量）
+ * --------------------------------------------------------
+ */
 class CartViewModel : ViewModel() {
 
+    // 🛒 当前购物车中的商品列表
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
 
-    // 添加商品
+    /** ➕ 添加商品到购物车（若已存在则数量+1） */
     fun addToCart(product: Product) {
-        val existing = _cartItems.find { it.productId == product.id }
+        val existing = _cartItems.find { it.productId == product.product_id }
         if (existing != null) {
-            val newList = _cartItems.toMutableList()
-            val index = newList.indexOf(existing)
-            newList[index] = existing.copy(quantity = existing.quantity + 1)
-            _cartItems.clear()
-            _cartItems.addAll(newList)
+            val index = _cartItems.indexOf(existing)
+            _cartItems[index] = existing.copy(quantity = existing.quantity + 1)
         } else {
             _cartItems.add(
                 CartItem(
-                    productId = product.id,
+                    productId = product.product_id,
                     productName = product.name,
                     quantity = 1
                 )
@@ -30,32 +35,29 @@ class CartViewModel : ViewModel() {
         }
     }
 
-    // 数量减少
-    fun decreaseItem(productId: String) {
+    /** ➖ 减少某个商品的数量 */
+    fun decreaseItem(productId: Int) {
         val existing = _cartItems.find { it.productId == productId }
         if (existing != null) {
+            val index = _cartItems.indexOf(existing)
             if (existing.quantity > 1) {
-                val newList = _cartItems.toMutableList()
-                val index = newList.indexOf(existing)
-                newList[index] = existing.copy(quantity = existing.quantity - 1)
-                _cartItems.clear()
-                _cartItems.addAll(newList)
+                _cartItems[index] = existing.copy(quantity = existing.quantity - 1)
             } else {
                 _cartItems.remove(existing)
             }
         }
     }
 
-    // 删除项目
-    fun removeItem(productId: String) {
+    /** ❌ 删除商品 */
+    fun removeItem(productId: Int) {
         _cartItems.removeAll { it.productId == productId }
     }
 
-    // 清空购物车
+    /** 🧹 清空购物车 */
     fun clearCart() {
         _cartItems.clear()
     }
 
-    // 计算总数量
+    /** 🔢 获取购物车总数量 */
     fun totalCount(): Int = _cartItems.sumOf { it.quantity }
 }

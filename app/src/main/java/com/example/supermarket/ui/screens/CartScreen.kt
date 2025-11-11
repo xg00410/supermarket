@@ -1,131 +1,67 @@
 package com.example.supermarket.ui.screens
-import androidx.navigation.NavController
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.supermarket.viewmodel.CartViewModel
-import com.example.supermarket.ui.components.BottomNavBar
+import com.example.supermarket.ui.components.MainScaffold
+import com.example.supermarket.ui.Routes
+import com.example.supermarket.models.CartItem
+import com.example.supermarket.models.toProduct
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     navController: NavController,
-    onBack: () -> Unit,
-    onGoRoute: () -> Unit,
-    cartViewModel: CartViewModel = viewModel()
+    cartViewModel: CartViewModel
 ) {
     val cartItems = cartViewModel.cartItems
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("カート") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text("戻る") }
-                }
-            )
-        },bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    MainScaffold(navController = navController, title = "カート") { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
         ) {
             if (cartItems.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("カートは空です")
-                }
+                Text("カートが空です。")
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(cartItems) { item ->
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             tonalElevation = 2.dp,
-                            shadowElevation = 2.dp
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(item.productName)
-                                    Text("数量: ${item.quantity}")
-                                }
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Button(onClick = {
-                                        cartViewModel.decreaseItem(item.productId)
-                                    }) { Text("-") }
-
-                                    Button(onClick = {
-                                        cartViewModel.addToCart(
-                                            product = com.example.supermarket.model.Product(
-                                                id = item.productId,
-                                                storeId = "",
-                                                name = item.productName,
-                                                category = "",
-                                                priceYen = 0,
-                                                stock = 0,
-                                                imageUrl = null
-                                            )
-                                        )
-                                    }) { Text("+") }
-
-                                    IconButton(onClick = {
-                                        cartViewModel.removeItem(item.productId)
-                                    }) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "削除"
-                                        )
-                                    }
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(item.productName)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("数量: ${item.quantity}")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row {
+                                    Button(onClick = { cartViewModel.decreaseItem(item.productId) }) { Text("-") }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Button(onClick = { cartViewModel.addToCart(item.toProduct()) }) { Text("+") }
                                 }
                             }
                         }
                     }
                 }
 
-                // 下部按钮行
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = { navController.navigate(Routes.ROUTE) },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = { cartViewModel.clearCart() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("全削除")
-                    }
-                    Button(
-                        onClick = onGoRoute,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("ルートへ")
-                    }
+                    Text("最短ルートを確認する")
                 }
             }
         }

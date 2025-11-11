@@ -23,14 +23,13 @@ import com.example.supermarket.R
 import com.example.supermarket.data.FakeRepository
 import com.example.supermarket.model.StoreItem
 
-
 /**
- * 🏬 店舗一覧画面 / 店铺列表界面
+ * 🏬 StoreMapExpandedScreen.kt
  * -----------------------------------------------------
- * 功能说明（中日对照）：
- * ・显示某都道府县内的所有店铺
- * ・上方搜索栏支持输入「県名・市名・店舗名」模糊搜索
- * ・输入“イオン”“東京”等时也能匹配对应结果
+ * 📘 店舗一覧画面 / 店铺列表界面
+ * -----------------------------------------------------
+ * 🇯🇵 指定地域内の店舗一覧を表示し、検索で絞り込み可能。
+ * 🇨🇳 显示特定区域内的所有店铺，可通过关键词检索。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +39,7 @@ fun StoreMapExpandedScreen(
     onStoreClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // 🌏 英文→日本语 地区映射 / 地域キーを日本語に変換
+    // 🌏 英文 → 日本语 地区映射
     val regionJpName = when (regionName) {
         "hokkaido" -> "北海道"
         "tohoku" -> "東北"
@@ -53,15 +52,13 @@ fun StoreMapExpandedScreen(
 
     var searchText by remember { mutableStateOf("") }
 
-    // 🔍 智能搜索逻辑 / 検索強化版
+    // 🔍 検索フィルター / 搜索过滤逻辑
     val filteredStores = remember(searchText, stores) {
-        if (searchText.isBlank()) {
-            stores
-        } else {
+        if (searchText.isBlank()) stores
+        else {
             val keyword = searchText.trim()
             val result = mutableSetOf<StoreItem>()
 
-            // 1️⃣ 店铺名、地址直接匹配
             stores.forEach { store ->
                 if (store.name.contains(keyword, ignoreCase = true) ||
                     store.address.contains(keyword, ignoreCase = true)
@@ -70,7 +67,7 @@ fun StoreMapExpandedScreen(
                 }
             }
 
-            // 2️⃣ 根据 FakeRepository 检查其他区域的店铺（支持跨县搜索）
+            // 追加: 全域検索 (跨县匹配)
             FakeRepository.getStores().forEach { store ->
                 if (store.name.contains(keyword, ignoreCase = true) ||
                     store.address.contains(keyword, ignoreCase = true)
@@ -85,12 +82,11 @@ fun StoreMapExpandedScreen(
                     )
                 }
             }
-
             result.toList()
         }
     }
 
-    // 🧭 画面结构 / 画面構成
+    // 🧭 画面レイアウト / 界面布局
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -110,7 +106,7 @@ fun StoreMapExpandedScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🔍 搜索栏 / 検索ボックス
+            // 🔍 搜索栏
             OutlinedTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -120,7 +116,7 @@ fun StoreMapExpandedScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 🏬 店铺列表 / 店舗リスト
+            // 🏪 店舗リスト / 店铺列表
             if (filteredStores.isNotEmpty()) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -131,7 +127,6 @@ fun StoreMapExpandedScreen(
                     }
                 }
             } else {
-                // ❌ 没有匹配结果 / 該当なし
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -144,7 +139,7 @@ fun StoreMapExpandedScreen(
 }
 
 /**
- * 🏪 店铺卡片组件 / 店舗カードコンポーネント
+ * 🏪 店舗カード / 店铺卡片组件
  */
 @Composable
 fun StoreListCard(
@@ -157,8 +152,7 @@ fun StoreListCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        shadowElevation = 2.dp
+        tonalElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
@@ -167,26 +161,19 @@ fun StoreListCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🖼 图片区域 / 画像エリア
-            Box(
+            // 🖼 画像 / 图片区域
+            val imageResId = if (store.imageRes != 0) store.imageRes else R.drawable.ic_store_placeholder
+
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = store.name,
                 modifier = Modifier
                     .size(80.dp)
                     .background(Color.LightGray, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (store.imageRes != null && store.imageRes != 0) {
-                    Image(
-                        painter = painterResource(id = store.imageRes),
-                        contentDescription = store.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text("No\nImage", color = Color.DarkGray, fontSize = 12.sp)
-                }
-            }
+                contentScale = ContentScale.Crop
+            )
 
-            // 📋 店铺信息 / 店舗情報
+            // 📋 店舗情報 / 店铺信息
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)

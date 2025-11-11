@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.supermarket.data.FakeRepository
 import com.example.supermarket.ui.screens.*
 import com.example.supermarket.viewmodel.CartViewModel
+import com.example.supermarket.ui.screens.successscreen.*
+
 
 object Routes {
     const val LOGIN = "login"
@@ -142,25 +144,45 @@ fun AppNavHost(navController: NavHostController) {
         }
 
         // ✅ 登录成功后跳转优化
+        // 🔹 ログイン成功
         composable(Routes.LOGIN_SUCCESS) {
-            LoginSuccessScreen(onNext = {
-                navController.navigate(Routes.STORE_SELECT) {
-                    popUpTo(Routes.LOGIN) { inclusive = true }
-                    launchSingleTop = true
+            LoginSuccessScreen(
+                onNext = {
+                    navController.navigate(Routes.STORE_SELECT) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
-            })
+            )
         }
+
 
         composable(Routes.PASSWORD_RESET) {
-            PasswordResetScreen(onBack = { navController.popBackStack() })
+            PasswordResetScreen(
+                onBack = { navController.popBackStack() },
+                onSuccess = {
+                    navController.navigate(Routes.PASSWORD_RESET_SUCCESS)
+                }
+            )
         }
 
+        // 🔹 パスワード変更成功
         composable(Routes.PASSWORD_RESET_SUCCESS) {
-            PasswordResetSuccessScreen(onBackToLogin = { navController.navigate(Routes.LOGIN) })
+            PasswordResetSuccessScreen(
+                onNext = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.PASSWORD_RESET) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
+        // 🔹 新規登録成功
         composable(Routes.REGISTER_SUCCESS) {
-            RegisterSuccessScreen(onNext = { navController.navigate(Routes.LOGIN) })
+            RegisterSuccessScreen(
+                onNext = { navController.navigate(Routes.LOGIN) }
+            )
         }
 
         composable(Routes.GPS_PERMISSION) {

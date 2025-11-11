@@ -1,116 +1,104 @@
 package com.example.supermarket.ui.screens
-import androidx.navigation.NavController
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.supermarket.data.FakeRepository
-import com.example.supermarket.model.Product
+import com.example.supermarket.models.Product   // ✅ 确认是 models（有 s）
 import com.example.supermarket.viewmodel.CartViewModel
-import com.example.supermarket.ui.components.BottomNavBar
+import com.example.supermarket.ui.components.MainScaffold
+import com.example.supermarket.ui.Routes
 
-
+/**
+ * 🍱 MenuScreen.kt
+ * -------------------------------------------------------------
+ * 📘 商品一覧画面 / 商品菜单界面
+ * -------------------------------------------------------------
+ * 🇯🇵 店舗ごとの商品一覧を表示し、カートに追加できる画面。
+ * 🇨🇳 显示各店铺商品列表，可将商品加入购物车。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     navController: NavController,
     storeId: String,
-    onBack: () -> Unit,
-    onGoCart: () -> Unit,
-    cartViewModel: CartViewModel = viewModel()
+    cartViewModel: CartViewModel
 ) {
+    // 🛍️ 获取该店铺的商品
     val products = remember { FakeRepository.getProductsByStore(storeId) }
-    var searchText by remember { mutableStateOf(TextFieldValue("")) }
 
-    val filtered = products.filter {
-        it.name.contains(searchText.text, ignoreCase = true) ||
-                it.category.contains(searchText.text, ignoreCase = true)
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("商品一覧") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text("戻る") }
-                },
-                actions = {
-                    Button(onClick = onGoCart) {
-                        Text("カート(${cartViewModel.totalCount()})")
-                    }
-                }
-            )
-        },
-        bottomBar = { BottomNavBar(navController) }
-    ) { paddingValues ->
+    MainScaffold(navController = navController, title = "商品一覧") { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(padding)
+                .padding(16.dp)
         ) {
-
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                placeholder = { Text("商品名またはカテゴリ検索") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filtered) { product ->
-                    ProductCard(
-                        product = product,
-                        onAdd = { cartViewModel.addToCart(product) }
-                    )
+            if (products.isEmpty()) {
+                // ⚠️ 没有商品时的提示
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("この店舗には商品が登録されていません。")
                 }
+            } else {
+                // ✅ 商品列表
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(products) { product ->
+                        ProductCard(
+                            product = product,
+                            onAddToCart = { cartViewModel.addToCart(product) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 🛒 跳转购物车
+            Button(
+                onClick = { navController.navigate(Routes.CART) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("カートを見る")
             }
         }
     }
 }
 
+/**
+ * 🏷️ 商品卡片组件 / 商品カードコンポーネント
+ */
 @Composable
-private fun ProductCard(
+fun ProductCard(
     product: Product,
-    onAdd: () -> Unit
+    onAddToCart: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         tonalElevation = 2.dp,
-        shadowElevation = 2.dp
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(product.name, style = MaterialTheme.typography.titleMedium)
-            Text("カテゴリ: ${product.category}")
-            Text("価格: ${product.priceYen}円")
-            Text("在庫: ${product.stock}個")
-
+            Text("価格: ${product.price}円", style = MaterialTheme.typography.bodyMedium)
             Button(
-                onClick = onAdd,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(8.dp)
+                onClick = onAddToCart,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.AddShoppingCart, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
                 Text("カートに追加")
             }
         }
