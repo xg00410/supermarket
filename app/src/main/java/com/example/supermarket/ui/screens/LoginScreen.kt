@@ -40,13 +40,13 @@ fun LoginScreen(
         ) {
             AppIcon(width = 240, height = 80)
             Spacer(modifier = Modifier.height(20.dp))
-            Text("欢迎使用 BAROGAKI 系统", style = MaterialTheme.typography.titleLarge)
+            Text("ようこそ", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(40.dp))
 
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
-                label = { Text("用户ID") },
+                label = { Text("ユーザーID") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
@@ -57,7 +57,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("密码") },
+                label = { Text("パスワード") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
@@ -81,25 +81,25 @@ fun LoginScreen(
                             val response = api.login(requestBody)
 
                             if (response.status == "success") {
-                                message = "欢迎 ${response.name ?: ""}"
+                                message = "ログイン成功 ${response.name ?: ""}"
                                 onLoginSuccess()
                             } else {
-                                message = response.message ?: "登录失败"
+                                message = response.message ?: "ログイン失敗"
                             }
                         } catch (e: Exception) {
-                            message = "网络错误: ${e.message}"
+                            message = "エラー: ${e.message}"
                         }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text("登 录")
+                Text("ログイン")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onNavigateToRegister) {
-                Text("还没有账号？点击这里注册")
+                Text("新規登録はここ")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
