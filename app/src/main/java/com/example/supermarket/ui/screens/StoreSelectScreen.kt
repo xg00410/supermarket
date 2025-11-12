@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -17,11 +16,18 @@ import com.example.supermarket.ui.components.MainScaffold
 import com.example.supermarket.ui.Routes
 
 /**
- * 🏪 店舗選択画面 / 店铺选择画面
+ * 🏬 店舗選択画面 / 店铺选择画面
+ * --------------------------------------------------------
+ * 検索・現在地ボタン・店舗リストを含む画面。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreSelectScreen(navController: NavController) {
+fun StoreSelectScreen(
+    navController: NavController,
+    onStoreClick: (String) -> Unit = {},
+    onSearchSubmit: (String) -> Unit = {},
+    onNearbyClick: () -> Unit = {}
+) {
     var searchText by remember { mutableStateOf("") }
     val stores = remember { FakeRepository.getStores() }
 
@@ -41,7 +47,7 @@ fun StoreSelectScreen(navController: NavController) {
             )
 
             Spacer(modifier = Modifier.height(8.dp))
-            FilledTonalButton(onClick = {}, modifier = Modifier.fillMaxWidth()) {
+            FilledTonalButton(onClick = { onNearbyClick() }, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.GpsFixed, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("現在地の近くの店舗を探す")
@@ -49,9 +55,13 @@ fun StoreSelectScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
             LazyColumn {
-                items(stores.filter { it.name.contains(searchText) || it.address.contains(searchText) }) { store ->
+                items(stores.filter {
+                    it.name.contains(searchText) || it.address.contains(searchText)
+                }) { store ->
                     TextButton(onClick = {
-                        navController.navigate("${Routes.STORE_DETAIL}?storeId=${store.id}")
+                        onStoreClick(store.id)
+                        // ✅ 修正：用路径参数传递 storeId，避免 Compose 找不到 route
+                        navController.navigate("${Routes.STORE_DETAIL}/${store.id}")
                     }) {
                         Text(store.name)
                     }

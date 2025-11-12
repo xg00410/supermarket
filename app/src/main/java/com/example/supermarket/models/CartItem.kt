@@ -1,11 +1,26 @@
 package com.example.supermarket.models
 
 /**
- * 🛒 CartItem.kt
- * カート内アイテム情報 / 购物车项目数据模型
+ * 🛒 カート内アイテム
  */
 data class CartItem(
-    val productId: String,   // 商品ID / Product ID
-    val productName: String, // 商品名 / Product Name
-    val quantity: Int        // 数量 / Quantity
+    val productId: Int,
+    val name: String,
+    val price: Double,
+    var quantity: Int
 )
+
+/**
+ * 🧩 CartItem → Product 変換関数
+ */
+fun CartItem.toProduct(): Product {
+    return Product(
+        productId = this.productId,
+        storeId = 0,
+        name = this.name,
+        category = null,
+        price = this.price,
+        stock = 0,
+        imageUrl = null
+    )
+}

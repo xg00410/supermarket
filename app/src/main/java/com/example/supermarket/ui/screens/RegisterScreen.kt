@@ -6,56 +6,57 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.supermarket.ui.Routes
 
 /**
  * 📝 RegisterScreen.kt
- * --------------------------------------------
- * 🇯🇵 新規登録画面：ユーザー情報を入力し、登録完了後登録成功画面へ。
- * 🇨🇳 新规注册界面：输入用户信息，注册成功后跳转注册成功画面。
+ * 新規登録画面 / 新规注册界面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    navController: NavController
+    onRegisterSuccess: () -> Unit    // ✅ 注册成功时调用
 ) {
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("新規登録") }) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Top,
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
-            Text("新規登録", style = MaterialTheme.typography.titleLarge)
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("ユーザーID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("パスワード") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(value = userId, onValueChange = { userId = it }, label = { Text("ユーザーID") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("パスワード") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("メールアドレス") }, modifier = Modifier.fillMaxWidth())
-
-            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
                     if (userId.isNotBlank() && password.isNotBlank()) {
-                        navController.navigate(Routes.REGISTER_SUCCESS)
+                        onRegisterSuccess()  // ✅ 调用外部 lambda
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("登録する")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = { navController.popBackStack() }) {
-                Text("戻る")
             }
         }
     }

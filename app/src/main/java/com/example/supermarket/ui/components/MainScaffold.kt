@@ -22,16 +22,11 @@ import com.example.supermarket.ui.components.BottomNavBar
 fun MainScaffold(
     navController: NavController,
     title: String,
-    content: @Composable (PaddingValues) -> Unit   // ✅ 一定要是 PaddingValues 类型！
+    content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(title) })
-        },
-        bottomBar = {
-            BottomNavBar(navController = navController)
-        }
-    ) { innerPadding ->                           // ✅ Compose 标准参数名称
-        content(innerPadding)                     // ✅ 把 Scaffold 内边距传下去
+        bottomBar = { BottomNavBar(navController = navController) } // ✅ 共用控制器
+    ) { innerPadding ->
+        content(innerPadding)
     }
 }

@@ -20,26 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.supermarket.R
-import com.example.supermarket.data.FakeRepository
-import com.example.supermarket.model.StoreItem
+import com.example.supermarket.models.StoreItem   // ✅ 修正为 models
 
-/**
- * 🏬 StoreMapExpandedScreen.kt
- * -----------------------------------------------------
- * 📘 店舗一覧画面 / 店铺列表界面
- * -----------------------------------------------------
- * 🇯🇵 指定地域内の店舗一覧を表示し、検索で絞り込み可能。
- * 🇨🇳 显示特定区域内的所有店铺，可通过关键词检索。
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreMapExpandedScreen(
     regionName: String,
-    stores: List<StoreItem>,
+    stores: List<StoreItem>,      // ✅ 明确是 List<StoreItem>
     onStoreClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    // 🌏 英文 → 日本语 地区映射
     val regionJpName = when (regionName) {
         "hokkaido" -> "北海道"
         "tohoku" -> "東北"
@@ -52,41 +42,14 @@ fun StoreMapExpandedScreen(
 
     var searchText by remember { mutableStateOf("") }
 
-    // 🔍 検索フィルター / 搜索过滤逻辑
     val filteredStores = remember(searchText, stores) {
         if (searchText.isBlank()) stores
         else {
-            val keyword = searchText.trim()
-            val result = mutableSetOf<StoreItem>()
-
-            stores.forEach { store ->
-                if (store.name.contains(keyword, ignoreCase = true) ||
-                    store.address.contains(keyword, ignoreCase = true)
-                ) {
-                    result.add(store)
-                }
-            }
-
-            // 追加: 全域検索 (跨县匹配)
-            FakeRepository.getStores().forEach { store ->
-                if (store.name.contains(keyword, ignoreCase = true) ||
-                    store.address.contains(keyword, ignoreCase = true)
-                ) {
-                    result.add(
-                        StoreItem(
-                            id = store.id,
-                            name = store.name,
-                            address = store.address,
-                            imageRes = R.drawable.ic_store_placeholder
-                        )
-                    )
-                }
-            }
-            result.toList()
+            val key = searchText.trim()
+            stores.filter { it.name.contains(key, true) || it.address.contains(key, true) }
         }
     }
 
-    // 🧭 画面レイアウト / 界面布局
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -106,7 +69,6 @@ fun StoreMapExpandedScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🔍 搜索栏
             OutlinedTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -116,7 +78,6 @@ fun StoreMapExpandedScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 🏪 店舗リスト / 店铺列表
             if (filteredStores.isNotEmpty()) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -138,11 +99,8 @@ fun StoreMapExpandedScreen(
     }
 }
 
-/**
- * 🏪 店舗カード / 店铺卡片组件
- */
 @Composable
-fun StoreListCard(
+private fun StoreListCard(
     store: StoreItem,
     onClick: () -> Unit
 ) {
@@ -161,7 +119,6 @@ fun StoreListCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🖼 画像 / 图片区域
             val imageResId = if (store.imageRes != 0) store.imageRes else R.drawable.ic_store_placeholder
 
             Image(
@@ -173,25 +130,15 @@ fun StoreListCard(
                 contentScale = ContentScale.Crop
             )
 
-            // 📋 店舗情報 / 店铺信息
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(store.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(store.address, fontSize = 14.sp, color = Color.Gray)
-
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.BottomEnd
-                ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         onClick = onClick,
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text("店舗へ")
-                    }
+                    ) { Text("店舗へ") }
                 }
             }
         }

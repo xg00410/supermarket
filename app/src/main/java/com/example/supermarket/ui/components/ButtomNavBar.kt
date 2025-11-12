@@ -30,9 +30,14 @@ fun BottomNavBar(navController: NavController) {
             NavigationBarItem(
                 selected = currentRoute == item.route,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(Routes.STORE_SELECT) { inclusive = false }
-                        launchSingleTop = true
+                    // ✅ 修正：防止重复导航，确保共用 AppNavHost 的 NavController
+                    if (navController.currentDestination?.route != item.route) {
+                        navController.navigate(item.route) {
+                            // 返回时不销毁主页面
+                            popUpTo(Routes.STORE_SELECT) { inclusive = false }
+                            // 避免重复实例化同一目的地
+                            launchSingleTop = true
+                        }
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },

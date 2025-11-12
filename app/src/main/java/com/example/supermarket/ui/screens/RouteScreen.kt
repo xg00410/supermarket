@@ -6,17 +6,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import com.example.supermarket.viewmodel.CartViewModel
 import com.example.supermarket.ui.components.MainScaffold
 
 /**
  * 🗺️ RouteScreen.kt
- * 最短ルート案内画面 / 最短路径导航画面
+ * --------------------------------------------------------
+ * 🇯🇵 最短ルート案内画面
+ * 🇨🇳 显示最短路径导航的页面
+ * --------------------------------------------------------
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RouteScreen(navController: NavController) {
-    MainScaffold(navController = navController, title = "最短ルート") { padding ->
+fun RouteScreen(
+    onBack: () -> Unit,
+    cartViewModel: CartViewModel
+) {
+    MainScaffold(navController = androidx.navigation.compose.rememberNavController(), title = "最短ルート") { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
