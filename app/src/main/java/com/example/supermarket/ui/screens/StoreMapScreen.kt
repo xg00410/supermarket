@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.supermarket.data.FakeRepository
-
+wdw
 /**
  * 🗾 地图区域选择画面
  * 日本地図から地域を選ぶ画面（例：北海道・関東など）
