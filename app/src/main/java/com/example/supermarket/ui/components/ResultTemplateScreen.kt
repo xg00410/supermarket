@@ -1,3 +1,12 @@
+// =========================================================
+// File: ResultTemplateScreen.kt
+// 概要: 成功・失敗などの結果表示用テンプレート画面。
+//設計書ID: なし（部品）
+//画面名: 成功メッセージ共通画面
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.components
 
 import androidx.compose.foundation.Image

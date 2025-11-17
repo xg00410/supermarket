@@ -1,3 +1,12 @@
+// =========================================================
+// File: StoreMapScreen.kt
+// 概要: 地図上に店舗マーカーを表示し、詳細画面へ遷移できる店舗マップ画面。
+//設計書ID: Store.Curent location
+//画面名: 店舗検索画面（地図＋現在地）
+// 更新者: 小林さん
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*

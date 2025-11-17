@@ -1,3 +1,10 @@
+// =========================================================
+// File: ApiService.kt
+// 概要: PHP API へのHTTPリクエスト（店舗・商品・ログイン等）を定義するインターフェース。
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.net
 
 import okhttp3.MediaType.Companion.toMediaTypeOrNull

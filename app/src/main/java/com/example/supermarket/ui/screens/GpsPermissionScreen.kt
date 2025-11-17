@@ -1,3 +1,12 @@
+// =========================================================
+// File: GpsPermissionScreen.kt
+// 概要: 位置情報利用に関する許可確認およびユーザー操作を行う画面。
+//設計書ID: Store.Curent location
+//画面名: 位置情報許可画面
+// 更新者: 小林さん
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*

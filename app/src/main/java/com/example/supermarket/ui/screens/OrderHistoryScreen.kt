@@ -1,3 +1,10 @@
+// =========================================================
+// File: OrderHistoryScreen.kt
+// 概要: 過去の注文履歴を一覧表示する画面。
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*

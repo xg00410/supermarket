@@ -1,3 +1,12 @@
+// =========================================================
+// File: PasswordResetScreen.kt
+// 設計書ID: Newpwdset
+// 画面名: 新パスワード設定画面
+// 概要: 新しいパスワードの設定を行う再設定画面。
+// 更新者: 呉さん
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*

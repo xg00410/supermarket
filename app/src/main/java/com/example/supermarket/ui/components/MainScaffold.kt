@@ -1,3 +1,12 @@
+// =========================================================
+// File: MainScaffold.kt
+// 概要: 各画面に共通するレイアウト構造（Scaffold）を提供するコンポーネント。
+//設計書ID: なし（部品）
+//画面名: メインレイアウト土台
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues

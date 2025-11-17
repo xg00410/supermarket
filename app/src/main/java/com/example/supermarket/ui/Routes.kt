@@ -1,40 +1,73 @@
 package com.example.supermarket.ui
 
 /**
- * Routes.kt
- * 🇯🇵 画面遷移ルート一覧
- * 🇨🇳 所有路由常量
+ * =========================================================
+ * ファイル名: Routes.kt
+ * 役割: アプリ内全ての画面遷移ID（Route文字列）を一元管理する。
+ *       設計書IDとの対応を完全に一致させるための重要ファイル。
+ *
+ * 注意事項:
+ *   - 設計書に存在する画面IDは「そのまま」Routeとして採用する
+ *   - 設計書に存在しない画面は「追加機能」として独自IDを使用
+ *   - 全ての画面は必ずここで定義し、NavHostから参照する
+ *
+ * 更新者: 郭
+ * 更新日: 2025-11-17
+ * =========================================================
  */
 object Routes {
-    const val MAIN = "main"
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val LOGIN_SUCCESS = "login_success"
-    const val REGISTER_SUCCESS = "register_success"
-    const val PASSWORD_RESET = "password_reset"
-    const val PASSWORD_RESET_SUCCESS = "password_reset_success"
 
-    // 店舗関連 / 店铺相关
-    const val STORE_MAP = "store_map"          // 地図＋地域から選ぶ / 地图&区域选店
-    const val STORE_REGION = "store_region"    // 地域→都道府県
-    const val STORE_LIST = "store_list"        // 都道府県→店舗一覧
-    const val STORE_DETAIL = "store_detail"    // 店舗詳細
-    const val STORE_SELECT = "store_select"    // 🔹新：検索＋リストの店舗選択画面
+    // =====================================================
+    // A区（ログイン／新規登録 系列）—— 設計書IDと完全対応
+    // =====================================================
 
-    const val MENU = "menu"                    // 店舗内の商品一覧
+    const val MAIN = "Main"                     // メイン画面
+    const val LOGIN = "Login"                   // ログイン画面
+    const val REGISTER = "Register"             // 新規登録画面
+    const val REGISTER_SUCCESS = "Register_suc" // 登録完了
+    const val LOGIN_SUCCESS = "Login_suc"       // ログイン成功画面
+    const val FIND_PASSWORD = "Findpwd"         // パスワード再設定（認証）
+    const val PASSWORD_RESET = "Newpwdset"      // 新パスワード設定
+    const val PASSWORD_RESET_SUCCESS = "Newpwdset_suc" // パスワード再設定完了
 
-    // カート・ルート / 购物车&最短路径
-    const val CART = "cart"
-    const val ROUTE = "route"
+    // =====================================================
+    // B区（店舗／地図 系列）—— 設計書：Store / Store.Curent location
+    // =====================================================
 
-    // GPS 権限 / GPS 权限
-    const val GPS_PERMISSION = "gps_permission"
+    const val STORE_CURRENT = "Store.Curent location"
+    // 店舗検索（地図＋現在地）
 
-    // マイページ系 / 个人中心相关
-    const val PROFILE = "profile"
-    const val PROFILE_EDIT = "profile_edit"
-    const val ORDER_HISTORY = "order_history"
-    const val SETTINGS = "settings"
-    const val HELP = "help"
-    const val TERMS = "terms"
+    const val STORE = "Store"
+    // 店舗画面（店内情報＋剖面図）
+
+    // 以下は設計書に存在しないが、実装上必要な追加画面
+    const val STORE_REGION = "StoreRegion"               // 追加機能：地域選択
+    const val STORE_SELECT = "StoreSelect"               // 追加機能：店舗一覧
+    const val STORE_DETAIL = "StoreDetail"               // 追加機能：店舗詳細
+    const val STORE_MAP_EXPANDED = "StoreMapExpanded"    // 追加機能：剖面図拡大
+    const val GPS_PERMISSION = "GpsPermission"           // 追加機能：位置情報許可
+
+    // =====================================================
+    // C区（商品／カート／最短ルート 系列）—— 設計書IDそのまま使用
+    // =====================================================
+
+    const val MENU = "menu"      // 商品一覧（カテゴリ＋商品）
+    const val LIST = "list"      // カート画面（数量変更／削除）
+    const val LIST2 = "list2"    // 確認画面／履歴画面
+    const val ROUTE = "route"    // 最短ルート画面
+
+    // =====================================================
+    // D区（追加機能：設計書に存在しない画面）
+    // =====================================================
+
+    const val PROFILE = "Profile"
+    const val PROFILE_EDIT = "ProfileEdit"
+    const val SETTINGS = "Settings"
+    const val HELP = "Help"
+    const val TERMS = "Terms"
+    const val ORDER_HISTORY = "OrderHistory"  // list2对应功能，但非設計書名
+
+    // 設計書には存在するが、実装に未追加の画面
+    const val LOGOUT = "Logout"               // ログアウト画面
+    const val LOGOUT_SUCCESS = "Logout_suc"   // ログアウト完了画面
 }

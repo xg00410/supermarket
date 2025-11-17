@@ -1,3 +1,13 @@
+// =========================================================
+// ファイル名: LoginScreen.kt
+// 設計書ID: Login
+// 画面名: ログイン画面
+// 役割: ユーザーIDとパスワードを入力し、認証を行う画面。
+//       「ログイン」「戻る」「パスワード忘れ」ボタンを持つ。
+// 更新者: 吴
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
@@ -7,23 +17,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 
-/**
- * LoginScreen
- * 🇯🇵 ログイン画面
- * 🇨🇳 登录画面
- *
- * @param onLoginSuccess ログイン成功時の処理 / 登录成功后的处理
- * @param onNavigateToRegister 新規登録画面へ遷移 / 跳转到新规注册
- * @param onForgotPassword パスワードリセット画面へ遷移 / 跳转到重设密码
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit,
-    onForgotPassword: () -> Unit
-) {
+fun LoginScreen(navController: NavController) {
+
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -43,6 +43,8 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            // ユーザーID入力
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
@@ -53,6 +55,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // パスワード入力
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -62,6 +65,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // エラーメッセージ
             if (errorText != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -73,12 +77,12 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ログインボタン（→ Login_suc）
             Button(
                 onClick = {
-                    // TODO: 本来はAPIで認証する / 实际开发中这里要调用后端认证
                     if (userId.isNotBlank() && password.isNotBlank()) {
                         errorText = null
-                        onLoginSuccess()
+                        navController.navigate(Routes.LOGIN_SUCCESS)
                     } else {
                         errorText = "ユーザーIDとパスワードを入力してください"
                     }
@@ -90,14 +94,20 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TextButton(onClick = onForgotPassword) {
+            // パスワードを忘れたボタン（→ Findpwd）
+            TextButton(
+                onClick = { navController.navigate(Routes.FIND_PASSWORD) }
+            ) {
                 Text("パスワードをお忘れの方はこちら")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TextButton(onClick = onNavigateToRegister) {
-                Text("新規登録はこちら")
+            // 戻る（→ Main）
+            TextButton(
+                onClick = { navController.navigate(Routes.MAIN) }
+            ) {
+                Text("戻る")
             }
         }
     }

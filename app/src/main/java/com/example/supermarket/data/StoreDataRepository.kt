@@ -1,3 +1,11 @@
+// =========================================================
+// File: StoreDataRepository.kt
+// 概要: 店舗一覧・商品一覧・ルート情報などの仮データを提供するリポジトリ。
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
+
 package com.example.supermarket.data
 
 import com.example.supermarket.models.Product

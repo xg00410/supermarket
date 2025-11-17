@@ -1,3 +1,12 @@
+// =========================================================
+// File: StoreDetailScreen.kt
+// 概要: 店舗名・画像・概要を表示し、商品一覧（MenuScreen）へ移動する店舗詳細画面。
+//設計書ID: Store
+//画面名: 店舗詳細画面
+// 更新者: 小林さん
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*

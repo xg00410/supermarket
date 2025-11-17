@@ -1,3 +1,10 @@
+// =========================================================
+// File: CartItem.kt
+// 概要: カート内商品の数量・小計金額などを管理するモデル。
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.models
 
 /**
@@ -5,7 +12,7 @@ package com.example.supermarket.models
  * 🇯🇵 カートに入っている商品データ
  * 🇨🇳 购物车中的商品数据
  *
- * - productId：商品ID
+ * - productId：git 商品ID
  * - name：商品名
  * - price：价格
  * - quantity：数量

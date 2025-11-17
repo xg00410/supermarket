@@ -1,3 +1,10 @@
+// =========================================================
+// File: CartViewModel.kt
+// 概要: カート内商品の状態管理（追加・削除・数量変更・合計計算）を行うViewModel。
+// 更新者: 郭
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.viewmodel
 
 import androidx.compose.runtime.mutableStateListOf

@@ -1,4 +1,13 @@
-// FindPasswordScreen.kt
+// =========================================================
+// File: FindPasswordScreen.kt
+// 概要: ユーザーIDを入力し、パスワード再設定画面へ遷移するための画面。
+// 設計書ID: Findpwd
+// 画面名: パスワード再設定（認証）画面
+// 対応する設計書シート:
+// 更新者: 呉さん
+// 更新日: 2025-11-17
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
