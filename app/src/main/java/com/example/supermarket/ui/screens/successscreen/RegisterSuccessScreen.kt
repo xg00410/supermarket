@@ -9,17 +9,19 @@
 
 package com.example.supermarket.ui.screens.successscreen
 
+
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ResultTemplateScreen
 
-/**
- * 新規登録完了画面 / 注册成功画面
- */
 @Composable
-fun RegisterSuccessScreen(onNext: () -> Unit) {
+fun RegisterSuccessScreen(
+    navController: NavController
+) {
     ResultTemplateScreen(
-        titleText = "登録完了！",
+        titleText = "登録完了",
         buttonText = "ログインへ",
-        onButtonClick = onNext
+        onButtonClick = { navController.navigate(Routes.LOGIN) }
     )
 }

@@ -10,16 +10,17 @@
 package com.example.supermarket.ui.screens.successscreen
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ResultTemplateScreen
 
-/**
- * ログイン成功画面 / 登录成功画面
- */
 @Composable
-fun LoginSuccessScreen(onNext: () -> Unit) {
+fun LoginSuccessScreen(
+    navController: NavController
+) {
     ResultTemplateScreen(
-        titleText = "ログイン成功！",
-        buttonText = "次へ",
-        onButtonClick = onNext
+        titleText = "ログイン成功",
+        buttonText = "店舗選択へ",
+        onButtonClick = { navController.navigate(Routes.STORE_SELECT) }
     )
 }

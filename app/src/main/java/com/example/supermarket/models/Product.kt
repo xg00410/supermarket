@@ -1,22 +1,46 @@
 // =========================================================
 // File: Product.kt
-// 概要: 商品情報（商品名、価格、カテゴリ、画像パスなど）を保持するデータモデル。
+// 設計書ID: menu / list / list2
+// 画面名: 商品情報モデル
+// 役割:
+//   - 店舗内の商品データを保持する基本モデル。
+//   - menu画面（カテゴリ＋商品一覧）
+//   - list（カート）
+//   - list2（カート管理）
+//   - route（最短ルート）
+//   など全画面で共通して使用するデータ構造。
 // 更新者: 郭
-// 更新日: 2025-11-17
+// 更新日: 2025-11-18
 // =========================================================
 
 package com.example.supermarket.models
 
+import androidx.annotation.DrawableRes
+
 /**
- * 🛍 Product.kt
- * 商品情報モデル / 商品信息模型
+ * Product
+ * 🇯🇵 店舗内の商品データ
+ * 🇨🇳 超市店铺中的商品数据
+ *
+ * 必須項目（設計書完全対応）:
+ *  - productId: 商品ID
+ *  - storeId: 店舗ID（どの店舗の商品か識別）
+ *  - storeName: 店舗名（list2の店舗単位表示に必要）
+ *  - name: 商品名
+ *  - category: カテゴリ（menu画面の左側カテゴリ切替に必要）
+ *  - price: 単価
+ *  - stock: 在庫数（数量＋／－の制限に使用）
+ *  - imageRes: 画像（list2／menuに必要）
  */
 data class Product(
-    val productId: Int,           // 🆔 商品ID
-    val storeId: String,          // 🏪 店舗ID（Store.id と一致する String）
-    val name: String,             // 🏷️ 商品名
-    val category: String?,        // 📂 カテゴリ
-    val price: Double,            // 💴 価格
-    val stock: Int,               // 📦 在庫数
-    val imageUrl: String?         // 🖼️ 商品画像URL
+    val productId: Int,
+    val storeId: String,
+    val storeName: String,
+    val name: String,
+    val category: String,
+    val price: Double,
+    val stock: Int,
+
+    @DrawableRes
+    val imageRes: Int?       // 本地图片资源ID
 )

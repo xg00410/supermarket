@@ -1,10 +1,10 @@
 // =========================================================
 // File: FindPasswordScreen.kt
-// 概要: ユーザーIDを入力し、パスワード再設定画面へ遷移するための画面。
-// 設計書ID: Findpwd
-// 画面名: パスワード再設定（認証）画面
-// 対応する設計書シート:
-// 更新者: 呉さん
+// 画面名: パスワード探し（メール入力画面）
+// 役割:
+//   - ユーザーIDとメールアドレスを入力し、次のパスワード再設定画面へ進む。
+//   - 「戻る」ボタンで前の画面へ戻る。
+// 更新者: 郭
 // 更新日: 2025-11-17
 // =========================================================
 
@@ -14,12 +14,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 
-/**
- * 🔍 FindPasswordScreen.kt
- * FindPwd 画面：ユーザーID + メールアドレス入力
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindPasswordScreen(
@@ -32,13 +29,8 @@ fun FindPasswordScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("パスワードを探す") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("戻る", color = MaterialTheme.colorScheme.primary)
-                    }
-                }
+            CenterAlignedTopAppBar(
+                title = { Text("パスワードを探す") }
             )
         }
     ) { padding ->
@@ -49,6 +41,7 @@ fun FindPasswordScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
@@ -67,21 +60,24 @@ fun FindPasswordScreen(
                 Text(errorMessage, color = MaterialTheme.colorScheme.error)
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = {
                     if (userId.isBlank() || email.isBlank()) {
-                        errorMessage = "IDとメールアドレスを入力してください。"
+                        errorMessage = "IDとメールアドレスを入力してください"
                     } else {
                         errorMessage = ""
-                        // ここ本来はサーバー照合 → OKなら次へ
-                        onNext()
+                        onNext()       // 次へ（成功画面へ）
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("次へ")
+            }
+
+            TextButton(onClick = onBack) {
+                Text("戻る")
             }
         }
     }

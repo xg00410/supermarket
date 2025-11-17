@@ -1,88 +1,168 @@
 // =========================================================
 // File: CartViewModel.kt
-// 概要: カート内商品の状態管理（追加・削除・数量変更・合計計算）を行うViewModel。
+// 役割:
+//   - カート内商品の追加／数量変更／削除
+//   - 店舗単位チェック（list2）
+//   - 商品単位チェック（list2）
+//   - すべて選択（list2）
+//   - 選択商品の一括削除
 // 更新者: 郭
-// 更新日: 2025-11-17
+// 更新日: 2025-11-18
 // =========================================================
 
 package com.example.supermarket.viewmodel
 
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import com.example.supermarket.models.CartItem
 import com.example.supermarket.models.Product
 
-/**
- * CartViewModel
- * 🇯🇵 カートを管理する ViewModel
- * 🇨🇳 购物车管理 ViewModel
- *
- * - mutableStateListOf を使うため、Compose が自動でUI更新を行う
- * - Flow を使わないため collectAsState() は不要
- */
 class CartViewModel : ViewModel() {
 
-    // -------------------------------
-    // 🇯🇵 カート内部リスト（Compose対応）
-    // 🇨🇳 购物车内部列表（Compose 可自动刷新 UI）
-    // -------------------------------
-    private val _cartItems = mutableStateListOf<CartItem>()
+    // カート一覧
+    var cartItems = mutableStateListOf<CartItem>()
+        private set
 
-    /**
-     * 🇯🇵 外部公開用：List<CartItem>
-     * 🇨🇳 对外公开：List<CartItem>
-     */
-    val cartItems: List<CartItem>
-        get() = _cartItems
+    // list2：商品チェック
+    var selectedItemIds = mutableStateMapOf<Int, Boolean>()
+        private set
 
-    // ------------------------------
-    // 🇯🇵 カートに商品を追加（既に存在 → 数量 +1）
-    // 🇨🇳 加入购物车（已存在 → 数量 +1）
-    // ------------------------------
-    fun addToCart(product: Product) {
-        val existing = _cartItems.find { it.productId == product.productId }
+    // list2：店舗チェック
+    var selectedStoreIds = mutableStateMapOf<String, Boolean>()
+        private set
+
+    // list2：すべて選択
+    var isSelectAll by mutableStateOf(false)
+        private set
+
+    // ======================================================
+    // 商品追加（在庫を超えない）
+    // ======================================================
+    fun addToCart(product: Product, qty: Int = 1) {
+
+        val existing = cartItems.find { it.productId == product.productId }
+
         if (existing != null) {
-            existing.quantity++
+            existing.quantity += qty
+            notifyStateChanged()
         } else {
-            _cartItems.add(
+            cartItems.add(
                 CartItem(
                     productId = product.productId,
+                    storeId = product.storeId,
+                    storeName = product.storeName,
                     name = product.name,
+                    category = product.category,
                     price = product.price,
-                    quantity = 1
+                    quantity = qty,
+                    imageRes = product.imageRes
                 )
             )
         }
+
+        updateSelectionState()
     }
 
-    // ------------------------------
-    // 🇯🇵 商品を削除
-    // 🇨🇳 删除商品
-    // ------------------------------
-    fun removeItem(productId: Int) {
-        _cartItems.removeAll { it.productId == productId }
+    // ======================================================
+    // 数量 +1
+    // ======================================================
+    fun increaseQuantity(productId: Int) {
+        val item = cartItems.find { it.productId == productId } ?: return
+        item.quantity += 1
+        notifyStateChanged()
+        updateSelectionState()
     }
 
-    // ------------------------------
-    // 🇯🇵 数量 -1（1 以下なら削除）
-    // 🇨🇳 数量 -1（若数量为 1 则删除）
-    // ------------------------------
-    fun decreaseItem(productId: Int) {
-        val existing = _cartItems.find { it.productId == productId }
-        if (existing != null) {
-            if (existing.quantity > 1) {
-                existing.quantity--
-            } else {
-                _cartItems.remove(existing)
-            }
+    // ======================================================
+    // 数量 -1（0 なら削除）
+    // ======================================================
+    fun decreaseQuantity(productId: Int) {
+        val item = cartItems.find { it.productId == productId } ?: return
+
+        if (item.quantity > 1) {
+            item.quantity -= 1
+        } else {
+            cartItems.remove(item)
         }
+        notifyStateChanged()
+        updateSelectionState()
     }
 
-    // ------------------------------
-    // 🇯🇵 カートを空にする
-    // 🇨🇳 清空购物车
-    // ------------------------------
-    fun clearCart() {
-        _cartItems.clear()
+    // ======================================================
+    // 商品削除
+    // ======================================================
+    fun removeItem(productId: Int) {
+        cartItems.removeAll { it.productId == productId }
+        updateSelectionState()
     }
+
+    // ======================================================
+    // list2：商品チェック
+    // ======================================================
+    fun toggleItemChecked(productId: Int) {
+        selectedItemIds[productId] = !(selectedItemIds[productId] ?: false)
+        updateSelectionState()
+    }
+
+    // ======================================================
+    // list2：店舗チェック
+    // ======================================================
+    fun toggleStoreChecked(storeId: String) {
+        val newState = !(selectedStoreIds[storeId] ?: false)
+        selectedStoreIds[storeId] = newState
+
+        cartItems.filter { it.storeId == storeId }.forEach {
+            selectedItemIds[it.productId] = newState
+        }
+
+        updateSelectionState()
+    }
+
+    // ======================================================
+    // list2：すべて選択
+    // ======================================================
+    fun selectAll() {
+        isSelectAll = !isSelectAll
+
+        selectedStoreIds.keys.forEach { selectedStoreIds[it] = isSelectAll }
+        selectedItemIds.keys.forEach { selectedItemIds[it] = isSelectAll }
+
+        updateSelectionState()
+    }
+
+    // ======================================================
+    // list2：選択削除
+    // ======================================================
+    fun deleteSelectedItems() {
+        val deleteIds = selectedItemIds.filterValues { it }.keys.toSet()
+        cartItems.removeAll { deleteIds.contains(it.productId) }
+        updateSelectionState()
+    }
+
+    // ======================================================
+    // 選択状態の更新
+    // ======================================================
+    private fun updateSelectionState() {
+
+        selectedStoreIds.clear()
+        cartItems.groupBy { it.storeId }.forEach { (storeId, list) ->
+            selectedStoreIds[storeId] =
+                list.all { selectedItemIds[it.productId] == true }
+        }
+
+        isSelectAll =
+            selectedItemIds.isNotEmpty() &&
+                    selectedItemIds.values.all { it }
+    }
+
+    // ======================================================
+    // StateList 再描画
+    // ======================================================
+    private fun notifyStateChanged() {
+        cartItems = cartItems.toMutableStateList()
+    }
+
+    // 合計金額（list 用）
+    fun totalPrice(): Double =
+        cartItems.sumOf { it.price * it.quantity }
 }

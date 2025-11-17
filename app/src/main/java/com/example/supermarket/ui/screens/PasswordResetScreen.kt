@@ -12,120 +12,90 @@ package com.example.supermarket.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.Icons
 
-
-/**
- * PasswordResetScreen
- * 🇯🇵 パスワード再設定画面
- * 🇨🇳 密码重新设定画面
- *
- * @param onBack 戻るボタン押下時 / 返回按钮
- * @param onSuccess パスワード変更成功時 / 修改成功后的处理
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordResetScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    var userId by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var errorText by remember { mutableStateOf<String?>(null) }
+    var pwd1 by remember { mutableStateOf("") }
+    var pwd2 by remember { mutableStateOf("") }
+    var errorText by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("パスワード再設定") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "戻る"
-                        )
-                    }
-                }
+                title = { Text("パスワード再設定") }
             )
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
-                value = userId,
-                onValueChange = { userId = it },
-                label = { Text("ユーザーID") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
 
+            // 1回目のパスワード
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("登録メールアドレス") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-            OutlinedTextField(
-                value = newPassword,
-                onValueChange = { newPassword = it },
+                value = pwd1,
+                onValueChange = { pwd1 = it },
                 label = { Text("新しいパスワード") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 2回目のパスワード確認
             OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                value = pwd2,
+                onValueChange = { pwd2 = it },
                 label = { Text("新しいパスワード（確認）") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (errorText != null) {
+            // エラー表示
+            if (errorText.isNotEmpty()) {
                 Text(
-                    text = errorText!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    text = errorText,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // 登録ボタン
             Button(
                 onClick = {
-                    if (userId.isBlank() || email.isBlank() ||
-                        newPassword.isBlank() || confirmPassword.isBlank()
-                    ) {
-                        errorText = "すべての項目を入力してください"
-                    } else if (newPassword != confirmPassword) {
-                        errorText = "パスワードが一致しません"
-                    } else {
-                        // TODO: 実際はサーバー側で更新 / 实际开发中应调用后端接口
-                        errorText = null
-                        onSuccess()
+                    when {
+                        pwd1.isBlank() || pwd2.isBlank() ->
+                            errorText = "パスワードを入力してください"
+
+                        pwd1 != pwd2 ->
+                            errorText = "2回のパスワードが一致しません"
+
+                        else -> {
+                            errorText = ""
+                            onSuccess() // → 成功画面へ
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("パスワードを変更する")
+                Text("変更する")
+            }
+
+            // 戻るボタン
+            TextButton(onClick = onBack) {
+                Text("戻る")
             }
         }
     }

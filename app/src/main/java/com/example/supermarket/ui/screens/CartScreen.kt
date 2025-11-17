@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.viewmodel.CartViewModel
-import com.example.supermarket.models.toProduct
 import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +96,8 @@ fun CartScreen(
                                     // +（数量増）
                                     Button(
                                         onClick = {
-                                            cartViewModel.addToCart(item.toProduct())
+                                            cartViewModel.increaseQuantity(item.productId)
+
                                         },
                                         modifier = Modifier.weight(1f)
                                     ) {
@@ -107,7 +107,8 @@ fun CartScreen(
                                     // -（数量減）
                                     OutlinedButton(
                                         onClick = {
-                                            cartViewModel.decreaseItem(item.productId)
+                                            cartViewModel.decreaseQuantity(item.productId)
+
                                         },
                                         modifier = Modifier.weight(1f)
                                     ) {

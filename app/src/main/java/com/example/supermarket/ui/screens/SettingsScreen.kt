@@ -13,28 +13,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 
-/**
- * SettingsScreen
- * 🇯🇵 設定画面
- * 🇨🇳 设置画面
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    onBack: () -> Unit
-) {
-    var notificationEnabled by remember { mutableStateOf(true) }
+fun SettingsScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("設定") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {onBack()
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }
@@ -46,19 +40,30 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Text(
+                "アプリ設定",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            // ここに設定項目を追加可能（例：通知、テーマ）
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("通知を受け取る")
-                Switch(
-                    checked = notificationEnabled,
-                    onCheckedChange = { notificationEnabled = it }
-                )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("通知設定（未実装）")
+                }
+            }
+
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("テーマ設定（未実装）")
+                }
             }
         }
     }

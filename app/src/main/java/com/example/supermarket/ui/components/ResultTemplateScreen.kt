@@ -9,6 +9,17 @@
 
 package com.example.supermarket.ui.components
 
+
+
+/**
+ * ✅ ResultTemplateScreen.kt
+ * -----------------------------------------------------------
+ * 🇯🇵 成功・結果表示画面の共通テンプレート
+ * 🇨🇳 注册成功、登录成功、密码修改成功等通用结果页模板
+ * -----------------------------------------------------------
+ */
+
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -19,15 +30,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.R
+import com.example.supermarket.R   // ★ 自分の R を使う！ここが重要
 
-/**
- * ✅ ResultTemplateScreen.kt
- * -----------------------------------------------------------
- * 🇯🇵 成功・結果表示画面の共通テンプレート
- * 🇨🇳 注册成功、登录成功、密码修改成功等通用结果页模板
- * -----------------------------------------------------------
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultTemplateScreen(
@@ -46,16 +50,20 @@ fun ResultTemplateScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+
+                // ★ あなたの logo を使えるようになった！
                 Image(
-                    painter = painterResource(id = R.drawable.ic_dialog_info),
+                    painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Result Icon",
                     modifier = Modifier.size(100.dp)
                 )
+
                 Text(
                     text = titleText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
+
                 Button(
                     onClick = onButtonClick,
                     modifier = Modifier

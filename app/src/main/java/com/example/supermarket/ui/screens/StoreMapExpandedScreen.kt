@@ -1,113 +1,106 @@
 // =========================================================
 // File: StoreMapExpandedScreen.kt
-// 概要: 店舗の拡大地図（剖面図）を表示する画面。
-//設計書ID: Store
-//画面名: 店舗フロアマップ拡大画面
-// 更新者: 小林さん
-// 更新日: 2025-11-17
+// 設計書ID: store_map_expanded
+// 画面名: 店舗内マップ（拡大表示）
+// 役割:
+//   - 店舗内の平面図（剖面図）を拡大表示する画面。
+//   - 戻るボタンで前画面（店舗拡大画面）に戻る。
+//   - 「商品一覧へ」ボタンで menu 画面へ遷移。
+// 更新者: 郭
+// 更新日: 2025-11-18
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.supermarket.models.Store
+import androidx.navigation.NavController
+import com.example.supermarket.data.StoreDataRepository
+import com.example.supermarket.ui.Routes
+import androidx.compose.ui.layout.ContentScale
+import com.example.supermarket.R
 
-/**
- * 店舗一覧画面（都道府県 → 店鋪列表）
- * 🇯🇵 都道府県の全店舗一覧を表示
- * 🇨🇳 显示都道府县下的所有店铺
- *
- * UI 优化版（不加动画、功能优先）
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreMapExpandedScreen(
-    regionName: String,
-    stores: List<Store>,
-    onStoreClick: (String) -> Unit,
-    onBack: () -> Unit
+    navController: NavController,
+    storeId: String
 ) {
+    val store = StoreDataRepository.getStoreById(storeId)
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("$regionName の店舗一覧") },
+                title = { Text("店舗内マップ") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }
             )
         }
     ) { padding ->
 
+        if (store == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("店舗情報が見つかりません。")
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            if (stores.isEmpty()) {
-                Text(
-                    "店舗が見つかりません。",
-                    style = MaterialTheme.typography.titleMedium
+            // =========================================================
+            // 店舗内平面図（画像）
+            // =========================================================
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val mapRes = store.floorMapRes ?: R.drawable.sample_floor
+
+                Image(
+                    painter = painterResource(id = mapRes),
+                    contentDescription = "floor map",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
                 )
             }
 
-            // ⭐ 逐个显示店铺
-            stores.forEach { store ->
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onStoreClick(store.id) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-
-                        // 左侧：名称 + 地址 + 营业时间
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = store.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            Text(
-                                text = store.address,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-
-                            Text(
-                                text = "営業時間：${store.openHours}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-
-                        // 右侧箭头
-                        Icon(
-                            imageVector = Icons.Default.ArrowForwardIos,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
+            // =========================================================
+            // 商品一覧へ遷移するボタン
+            // =========================================================
+            Button(
+                onClick = {
+                    navController.navigate("${Routes.MENU}/$storeId")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("商品一覧へ")
             }
         }
     }

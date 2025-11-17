@@ -17,13 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
-
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit,
+    onForgotPassword: () -> Unit
+) {
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -44,47 +45,37 @@ fun LoginScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // ユーザーID入力
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
                 label = { Text("ユーザーID") },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // パスワード入力
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("パスワード") },
-                singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // エラーメッセージ
             if (errorText != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = errorText!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(errorText!!, color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ログインボタン（→ Login_suc）
             Button(
                 onClick = {
-                    if (userId.isNotBlank() && password.isNotBlank()) {
-                        errorText = null
-                        navController.navigate(Routes.LOGIN_SUCCESS)
-                    } else {
+                    if (userId.isBlank() || password.isBlank()) {
                         errorText = "ユーザーIDとパスワードを入力してください"
+                    } else {
+                        errorText = null
+                        onLoginSuccess()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -94,20 +85,16 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // パスワードを忘れたボタン（→ Findpwd）
-            TextButton(
-                onClick = { navController.navigate(Routes.FIND_PASSWORD) }
-            ) {
+            // ≫ パスワード忘れ
+            TextButton(onClick = onForgotPassword) {
                 Text("パスワードをお忘れの方はこちら")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 戻る（→ Main）
-            TextButton(
-                onClick = { navController.navigate(Routes.MAIN) }
-            ) {
-                Text("戻る")
+            // ≫ 新規登録へ
+            TextButton(onClick = onNavigateToRegister) {
+                Text("新規登録はこちら")
             }
         }
     }
