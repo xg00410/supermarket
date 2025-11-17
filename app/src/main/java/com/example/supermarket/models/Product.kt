@@ -1,3 +1,4 @@
+// Product.kt
 package com.example.supermarket.models
 
 /**
@@ -6,7 +7,7 @@ package com.example.supermarket.models
  */
 data class Product(
     val productId: Int,           // 🆔 商品ID
-    val storeId: Int,             // 🏪 店舗ID
+    val storeId: String,          // 🏪 店舗ID（Store.id と一致する String）
     val name: String,             // 🏷️ 商品名
     val category: String?,        // 📂 カテゴリ
     val price: Double,            // 💴 価格

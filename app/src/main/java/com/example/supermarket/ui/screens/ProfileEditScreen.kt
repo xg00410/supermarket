@@ -1,29 +1,69 @@
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
+/**
+ * ProfileEditScreen
+ * 🇯🇵 個人情報編集
+ * 🇨🇳 编辑个人资料
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileEditScreen(onBack: () -> Unit) {
+fun ProfileEditScreen(
+    onBack: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("プロフィール編集") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("戻る") } }
+            CenterAlignedTopAppBar(
+                title = { Text("情報編集") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    }
+                }
             )
         }
     ) { padding ->
-        Box(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.Center
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("ここに名前・メール・パスワード変更などのUIを追加します。")
+
+            OutlinedTextField(
+                value = name, onValueChange = { name = it },
+                label = { Text("氏名") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = email, onValueChange = { email = it },
+                label = { Text("メールアドレス") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            Button(
+                onClick = { onBack() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("保存")
+            }
         }
     }
 }

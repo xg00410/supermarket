@@ -2,72 +2,105 @@ package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.data.FakeRepository
+import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.viewmodel.CartViewModel
-import com.example.supermarket.models.Product
-import com.example.supermarket.ui.Routes
-import com.example.supermarket.ui.components.MainScaffold
 import androidx.compose.ui.Alignment
 
+/**
+ * MenuScreen
+ * 🇯🇵 商品一覧（店舗内の商品選択画面）
+ * 🇨🇳 店铺商品菜单（商品选择）
+ *
+ * - 店名を表示する
+ * - 店舗IDに紐づく商品を取得する
+ * - 追加ボタン → カートへ追加
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     navController: NavController,
     storeId: String,
-    onGoCart: () -> Unit = { navController.navigate(Routes.CART) },
-    onBack: () -> Unit = { navController.popBackStack() },
+    onGoCart: () -> Unit,
+    onBack: () -> Unit,
     cartViewModel: CartViewModel
 ) {
-    val products = remember { FakeRepository.getProductsByStore(storeId) }
+    val store = StoreDataRepository.getStoreById(storeId)
+    val products = StoreDataRepository.getProductsByStore(storeId)
 
-    MainScaffold(navController = navController, title = "商品一覧") { padding ->
-        Column(
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(store?.name ?: "商品一覧") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onGoCart) {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = "cart")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+
+        if (store == null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("店舗情報が見つかりません。")
+            }
+            return@Scaffold
+        }
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (products.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("この店舗には商品がありません。")
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(products) { product ->
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            tonalElevation = 2.dp,
+
+            items(products.size) { index ->
+                val item = products[index]
+
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text("カテゴリー：${item.category ?: "不明"}")
+                        Text("価格：${item.price} 円")
+                        Text("在庫：${item.stock}")
+
+                        Button(
+                            onClick = {
+                                cartViewModel.addToCart(item)
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(product.name, style = MaterialTheme.typography.titleMedium)
-                                Text("価格: ${product.price}円")
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = { cartViewModel.addToCart(product) },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("カートに追加")
-                                }
-                            }
+                            Text("カートに追加")
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onGoCart,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("カートを見る")
             }
         }
     }

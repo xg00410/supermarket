@@ -1,7 +1,14 @@
 package com.example.supermarket.models
 
 /**
- * 🛒 カート内アイテム
+ * CartItem
+ * 🇯🇵 カートに入っている商品データ
+ * 🇨🇳 购物车中的商品数据
+ *
+ * - productId：商品ID
+ * - name：商品名
+ * - price：价格
+ * - quantity：数量
  */
 data class CartItem(
     val productId: Int,
@@ -11,16 +18,20 @@ data class CartItem(
 )
 
 /**
- * 🧩 CartItem → Product 変換関数
+ * CartItem → Product 変換
+ * 🇯🇵 カートに入っている商品を Product に変換する簡易関数
+ * 🇨🇳 将购物车商品转换为 Product 的简易方法
+ *
+ * ※ CartViewModel.addToCart(Product) が必要とするため
+ *   简化字段，只使用最基本的 productId, name, price。
  */
-fun CartItem.toProduct(): Product {
-    return Product(
+fun CartItem.toProduct(): Product =
+    Product(
         productId = this.productId,
-        storeId = 0,
+        storeId = "",            // カートでは不要なので空文字でOK
         name = this.name,
-        category = null,
+        category = null,         // カートではカテゴリ情報は保持しない
         price = this.price,
-        stock = 0,
-        imageUrl = null
+        stock = 0,               // 在庫は不要なので0
+        imageUrl = null          // 画像は不要なのでnull
     )
-}

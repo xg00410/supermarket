@@ -3,34 +3,44 @@ package com.example.supermarket.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.supermarket.ui.Routes
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.Icons
+
 
 /**
- * 🔐 PasswordResetScreen.kt
- * --------------------------------------------------------------
+ * PasswordResetScreen
  * 🇯🇵 パスワード再設定画面
- * ユーザーが新しいパスワードを入力し、確認後に変更を確定する画面。
+ * 🇨🇳 密码重新设定画面
  *
- * 🇨🇳 密码重设输入界面
- * 用户可输入新的密码并确认，点击按钮后跳转到「成功画面」。
- * --------------------------------------------------------------
+ * @param onBack 戻るボタン押下時 / 返回按钮
+ * @param onSuccess パスワード変更成功時 / 修改成功后的处理
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PasswordResetScreen(onBack: () -> Unit, onSuccess: (String) -> Unit = {}) {
+fun PasswordResetScreen(
+    onBack: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    var userId by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+    var errorText by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("パスワード再設定") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("戻る", color = MaterialTheme.colorScheme.primary)
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "戻る"
+                        )
                     }
                 }
             )
@@ -41,47 +51,72 @@ fun PasswordResetScreen(onBack: () -> Unit, onSuccess: (String) -> Unit = {}) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 🆕 新密码输入 / 新しいパスワード入力
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("ユーザーID") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("登録メールアドレス") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
             OutlinedTextField(
                 value = newPassword,
                 onValueChange = { newPassword = it },
                 label = { Text("新しいパスワード") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 🔁 确认密码输入 / 確認用パスワード入力
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("確認用パスワード") },
+                label = { Text("新しいパスワード（確認）") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (errorMessage.isNotEmpty()) {
-                Text(errorMessage, color = MaterialTheme.colorScheme.error)
+            if (errorText != null) {
+                Text(
+                    text = errorText!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
-            // ✅ 提交按钮 / 変更ボタン
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = {
-                    when {
-                        newPassword.isBlank() || confirmPassword.isBlank() ->
-                            errorMessage = "パスワードを入力してください。"
-                        newPassword != confirmPassword ->
-                            errorMessage = "パスワードが一致しません。"
-                        else -> {
-                            errorMessage = ""
-                            onSuccess(newPassword)
-                        }
+                    if (userId.isBlank() || email.isBlank() ||
+                        newPassword.isBlank() || confirmPassword.isBlank()
+                    ) {
+                        errorText = "すべての項目を入力してください"
+                    } else if (newPassword != confirmPassword) {
+                        errorText = "パスワードが一致しません"
+                    } else {
+                        // TODO: 実際はサーバー側で更新 / 实际开发中应调用后端接口
+                        errorText = null
+                        onSuccess()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("変更する")
+                Text("パスワードを変更する")
             }
         }
     }

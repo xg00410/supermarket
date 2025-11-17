@@ -1,29 +1,56 @@
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
+/**
+ * SettingsScreen
+ * 🇯🇵 設定画面
+ * 🇨🇳 设置画面
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit
+) {
+    var notificationEnabled by remember { mutableStateOf(true) }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("アプリ設定") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("戻る") } }
+            CenterAlignedTopAppBar(
+                title = { Text("設定") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    }
+                }
             )
         }
     ) { padding ->
-        Box(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.Center
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("ここにテーマ設定や通知設定を追加します。")
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("通知を受け取る")
+                Switch(
+                    checked = notificationEnabled,
+                    onCheckedChange = { notificationEnabled = it }
+                )
+            }
         }
     }
 }

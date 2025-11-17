@@ -1,33 +1,23 @@
 package com.example.supermarket.ui.components
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import android.R
+import com.example.supermarket.R
 
 /**
- * 🧩 AppIcon.kt
- * -----------------------------------------------------------
- * 🇯🇵 アプリロゴ表示用の共通コンポーネント
- * 🇨🇳 用于显示应用程序图标的通用组件
- * -----------------------------------------------------------
+ * AppIcon
+ * 🇯🇵 アプリロゴ
+ * 🇨🇳 主页面 Logo
  */
 @Composable
 fun AppIcon() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.sym_def_app_icon),
-            contentDescription = "App Logo",
-            modifier = Modifier.size(96.dp)
-        )
-    }
+    Image(
+        painter = painterResource(id = R.drawable.logo),
+        contentDescription = "App Logo",
+        modifier = Modifier.size(200.dp) // 放大后的 Logo
+    )
 }

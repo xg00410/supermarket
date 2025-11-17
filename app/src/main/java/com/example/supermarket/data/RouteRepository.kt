@@ -1,3 +1,4 @@
+// RouteRepository.kt
 package com.example.supermarket.data
 
 import kotlin.math.pow
@@ -18,12 +19,17 @@ object RouteRepository {
         ProductPosition("p002", "カップラーメン 醤油", 3.0, 5.0),
         ProductPosition("p010", "コカ・コーラ 1.5L", 8.0, 1.0),
         ProductPosition("p020", "チョコスナック", 9.0, 7.0),
-        ProductPosition("p030", "ポテトチップス", 4.0, 8.0)
+        ProductPosition("p030", "ポテトチップス うすしお", 4.0, 8.0)
     )
 
-    // 获取位置
+    // 根据ID获取位置
     fun getPositionById(productId: String): ProductPosition? {
         return productPositions.find { it.productId == productId }
+    }
+
+    // 根据商品名获取位置（CartItem → name）
+    fun getPositionByName(name: String): ProductPosition? {
+        return productPositions.find { it.name == name }
     }
 
     // 计算两点距离
@@ -31,9 +37,9 @@ object RouteRepository {
         return sqrt((a.x - b.x).pow(2) + (a.y - b.y).pow(2))
     }
 
-    // 简易TSP算法：找出一条最短路径
-    fun getShortestRoute(productIds: List<String>): List<ProductPosition> {
-        val points = productIds.mapNotNull { getPositionById(it) }.toMutableList()
+    // 简易TSP算法：找出一条最短路径（根据商品名）
+    fun getShortestRouteByNames(names: List<String>): List<ProductPosition> {
+        val points = names.mapNotNull { getPositionByName(it) }.toMutableList()
         if (points.isEmpty()) return emptyList()
 
         val route = mutableListOf<ProductPosition>()

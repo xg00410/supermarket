@@ -1,90 +1,73 @@
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.supermarket.data.FakeRepository
-import com.example.supermarket.models.Store   // ✅ 修正为 models
+import com.example.supermarket.data.StoreDataRepository
 
+/**
+ * StoreDetailScreen
+ * 🇯🇵 店舗詳細画面
+ * 🇨🇳 店铺详细画面
+ *
+ * - 店舗名 / 地址 / 営業時間
+ * - 「この店舗の商品を確認する」→ MenuScreen へ
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreDetailScreen(
     storeId: String,
-    onBack: () -> Unit,
-    onGoMenu: (String) -> Unit
+    onGoMenu: () -> Unit,
+    onBack: () -> Unit
 ) {
-    val store: Store? = remember(storeId) {
-        FakeRepository.getStoreById(storeId)
-    }
+    val store = StoreDataRepository.getStoreById(storeId)
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("店舗詳細") },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("戻る") }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    }
                 }
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
+
         if (store == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(padding),
                 contentAlignment = Alignment.Center
-            ) { Text("店舗情報が見つかりません") }
+            ) {
+                Text("店舗情報が見つかりません。")
+            }
             return@Scaffold
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                tonalElevation = 2.dp,
-                shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(store.name, style = MaterialTheme.typography.titleLarge)
-                    Text(store.address, color = Color.Gray)
-                    Text("営業時間: ${store.openHours}", style = MaterialTheme.typography.bodySmall)
-                }
-            }
+            Text(store.name, style = MaterialTheme.typography.headlineSmall)
+            Text("住所：${store.address}")
+            Text("営業時間：${store.openHours}")
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("店舗マップ", style = MaterialTheme.typography.titleMedium)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(Color(0xFFE0E0E0), RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("ここに店舗の平面図を表示", textAlign = TextAlign.Center)
-                }
-            }
+            Spacer(Modifier.height(24.dp))
 
             Button(
-                onClick = { onGoMenu(store.id) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(12.dp)
+                onClick = onGoMenu,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("この店舗の商品を確認する")
             }
