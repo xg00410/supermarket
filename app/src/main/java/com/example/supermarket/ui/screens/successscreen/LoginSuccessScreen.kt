@@ -21,6 +21,11 @@ fun LoginSuccessScreen(
     ResultTemplateScreen(
         titleText = "ログイン成功",
         buttonText = "店舗選択へ",
-        onButtonClick = { navController.navigate(Routes.STORE_SELECT) }
+        onButtonClick = {
+            navController.navigate(Routes.STORE_SELECT) {
+                popUpTo(Routes.LOGIN) { inclusive = true }
+            }
+        }
+
     )
 }

@@ -24,6 +24,7 @@ import com.example.supermarket.viewmodel.CartViewModel
 // Screens
 import com.example.supermarket.ui.components.ResultTemplateScreen
 import com.example.supermarket.ui.screens.*
+import com.example.supermarket.ui.screens.successscreen.LoginSuccessScreen
 import com.example.supermarket.ui.screens.successscreen.PasswordResetSuccessScreen
 
 @Composable
@@ -55,11 +56,8 @@ fun AppNavHost(
         }
 
         composable(Routes.LOGIN_SUCCESS) {
-            ResultTemplateScreen(
-                titleText = "ログイン成功！",
-                buttonText = "ホームへ戻る",
-                onButtonClick = { navController.navigate(Routes.MAIN) }
-            )
+            LoginSuccessScreen(navController)
+
         }
 
         // -------------------------------
@@ -140,17 +138,16 @@ fun AppNavHost(
         }
 
         // -------------------------------
-        // 店舗詳細
+        // 店舗詳細画面
         // -------------------------------
-        composable("${Routes.STORE_DETAIL}/{storeId}") {
-            val storeId = it.arguments?.getString("storeId") ?: ""
-
+        composable("${Routes.STORE_DETAIL}/{storeId}") { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
             StoreDetailScreen(
                 storeId = storeId,
                 onBack = { navController.popBackStack() },
                 onViewStoreMap = {
-                    onViewStoreMap()
-
+                    // ここでは店舗マップ画面(store_Current)へ遷移 / 这里先跳到现有的店内地图画面
+                    navController.navigate(Routes.STORE_MAP)
                 },
                 onViewMenu = {
                     navController.navigate("${Routes.MENU}/$storeId")
@@ -159,18 +156,7 @@ fun AppNavHost(
         }
 
         // -------------------------------
-        // 商品一覧（MenuScreen）
-        // -------------------------------
-        composable(
-            route = "${Routes.MENU}/{storeId}",
-            arguments = listOf(navArgument("storeId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
-            MenuScreen(navController, storeId, cartViewModel)
-        }
-
-        // -------------------------------
-        // カート
+        // カート画面（list）
         // -------------------------------
         composable(Routes.CART) {
             CartScreen(
@@ -180,54 +166,65 @@ fun AppNavHost(
         }
 
         // -------------------------------
-        // 最短ルート
+        // ルート案内画面（route）
         // -------------------------------
         composable(Routes.ROUTE) {
-            RouteScreen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
+            RouteScreen(navController = navController)
         }
 
         // -------------------------------
-// マイページ
-        composable(Routes.PROFILE_EDIT) {
-            ProfileEditScreen(
-                onBack = { navController.popBackStack() },
-                onSaved = {
-                    onSaved()
-                    {
-                        popUpTo(Routes.PROFILE) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-
-// プロフィール編集
-        composable(Routes.PROFILE_EDIT) {
-            ProfileEditScreen(
+        // 注文履歴画面
+        // -------------------------------
+        composable(Routes.ORDER_HISTORY) {
+            OrderHistoryScreen(
                 onBack = { navController.popBackStack() }
             )
         }
 
-// 設定
+        // -------------------------------
+        // 設定画面
+        // -------------------------------
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() }
             )
         }
 
-// 利用規約
+        // -------------------------------
+        // 利用規約画面
+        // -------------------------------
         composable(Routes.TERMS) {
             TermsScreen(
                 onBack = { navController.popBackStack() }
             )
         }
 
-// 注文履歴
-        composable(Routes.ORDER_HISTORY) {
-            OrderHistoryScreen(
-                onBack = { navController.popBackStack() })
+        // -------------------------------
+        // マイページ（プロフィール）関連
+        // -------------------------------
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(Routes.PROFILE_EDIT) },
+                onSettings = { navController.navigate(Routes.SETTINGS) },
+                onTerms = { navController.navigate(Routes.TERMS) },
+                onOrderHistory = { navController.navigate(Routes.ORDER_HISTORY) }
+            )
+        }
+
+        composable(Routes.PROFILE_EDIT) {
+            ProfileEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
+        // -------------------------------
+        // ヘルプ画面（任意）
+        // -------------------------------
+        composable(Routes.HELP) {
+            HelpScreen(navController)
+        }
+
     }
-}}
+}

@@ -42,18 +42,18 @@ fun CartScreen(
     val totalPrice = cartItems.sumOf { it.price * it.quantity }
 
     Scaffold(
+
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = { Text("カート") },
                 navigationIcon = {
-                    IconButton(
-                        onClick = { navController.navigate(Routes.MENU) }
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
                     }
                 }
             )
         }
+
     ) { padding ->
 
         Column(

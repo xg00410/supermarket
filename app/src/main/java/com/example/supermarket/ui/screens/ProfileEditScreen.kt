@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.ui.Routes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileEditScreen(
     onBack: () -> Unit,

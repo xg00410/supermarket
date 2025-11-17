@@ -13,217 +13,139 @@
 
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import com.example.supermarket.viewmodel.CartViewModel
-import com.example.supermarket.ui.Routes
-import com.example.supermarket.data.StoreDataRepository
-import com.example.supermarket.models.CartItem
 
+// 設計書ID: route
+// 画面名: ルート案内画面
+// 機能:
+// - 上部に店内マップ（イメージ）を表示
+// - 下部に「エリア」「商品名」「数量」「チェックボックス」を表示する2行構成のリスト
+// - 「GPS開始」「GPS停止」ボタンでルート案内の開始/停止を制御
+// - 戻るボタンでカート画面（list）へ戻る
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RouteScreen(
-    navController: NavController,
-    cartViewModel: CartViewModel
-) {
-    val cartItems = cartViewModel.cartItems
+fun RouteScreen(navController: NavController) {
 
-    // 店舗ごとにグループ化（1店舗のみを選択している想定だが、複数店舗にも対応）
-    val groupedByStore = cartItems.groupBy { it.storeId }
+    // 仮のルートデータ / 临时路线数据
+    val routeItems = listOf(
+        RouteItem(area = "飲料コーナー", productName = "お〜いお茶 500ml", quantity = 2),
+        RouteItem(area = "カップ麺コーナー", productName = "カップラーメン 醤油", quantity = 1),
+        RouteItem(area = "飲料コーナー", productName = "コカ・コーラ 1.5L", quantity = 1)
+    )
 
-    // チェック状態：productId → Boolean（通路上で「回収済み」のイメージ）
-    val checkedMap = remember { mutableStateMapOf<Int, Boolean>() }
-
-    // GPS開始・停止の簡易状態
-    var gpsRunning by remember { mutableStateOf(false) }
+    val isGpsActive = remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("最短ルート") },
+            TopAppBar(
+                title = { Text("ルート案内") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate(Routes.LIST) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
                     }
                 }
             )
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
-
-            // ============================================
-            // 上部：地図エリア ＋ GPS ボタン
-            // ============================================
+            // 上部: 店内マップ（ダミー）/ 上部: 店内地图（占位）
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .background(Color(0xFFE0E0E0)),   // 地図領域の簡易背景
+                    .height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Text("店内マップ（ダミー）")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // GPS開始・停止ボタン / GPS 开始・停止按钮
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { isGpsActive.value = true },
+                    enabled = !isGpsActive.value,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = "店舗内ルート地図（ダミー表示）",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = { gpsRunning = true }
-                        ) {
-                            Text("GPS開始")
-                        }
-                        OutlinedButton(
-                            onClick = { gpsRunning = false }
-                        ) {
-                            Text("GPS停止")
-                        }
-                    }
-
-                    if (gpsRunning) {
-                        Text(
-                            text = "現在地を追跡中…",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Text("GPS開始")
+                }
+                Button(
+                    onClick = { isGpsActive.value = false },
+                    enabled = isGpsActive.value,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("GPS停止")
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // ============================================
-            // 下部：エリア＋商品一覧
-            // 設計書では「エリア／商品」2行構成イメージだが、
-            // ここでは店舗名 → 商品というブロックで表現する。
-            // ============================================
+            // 下部: エリア・商品情報リスト / 下部: 区域 + 商品信息列表
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
-                // 店舗ごとにセクション表示
-                items(groupedByStore.keys.toList()) { storeId ->
-                    val itemsInStore = groupedByStore[storeId] ?: emptyList()
-                    if (itemsInStore.isEmpty()) return@items
-
-                    val store = StoreDataRepository.getStoreById(storeId)
-                    val storeName = store?.storeName ?: itemsInStore.first().storeName
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(8.dp)
-                    ) {
-                        // 店舗名（エリア相当）
-                        Text(
-                            text = "店舗：$storeName",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        itemsInStore.forEach { item ->
-                            RouteItemRow(
-                                item = item,
-                                checked = checkedMap[item.productId] ?: false,
-                                onCheckedChange = { newChecked ->
-                                    checkedMap[item.productId] = newChecked
-                                }
-                            )
-                        }
-                    }
+                items(routeItems) { item ->
+                    RouteItemRow(item = item)
                 }
             }
         }
     }
 }
 
-/**
- * 最短ルート画面下部の 1 商品行
- * - 写真
- * - 商品名
- * - 数量
- * - チェックボックス（回収済みフラグ）
- */
+// ルート表示用データクラス / 路线显示用数据类
+data class RouteItem(
+    val area: String,
+    val productName: String,
+    val quantity: Int
+)
+
+// 1行分の表示 / 单行显示
 @Composable
-private fun RouteItemRow(
-    item: CartItem,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
+private fun RouteItemRow(item: RouteItem) {
+    val checked = remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            // 写真
-            item.imageRes?.let {
-                Image(
-                    painter = painterResource(id = it),
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .size(64.dp),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "数量：${item.quantity} 個",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(text = "エリア: ${item.area}")
+                Text(text = "商品: ${item.productName}")
+                Text(text = "数量: ${item.quantity}")
             }
-
             Checkbox(
-                checked = checked,
-                onCheckedChange = onCheckedChange
+                checked = checked.value,
+                onCheckedChange = { checked.value = it }
             )
         }
     }

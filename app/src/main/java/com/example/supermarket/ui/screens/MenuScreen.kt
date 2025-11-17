@@ -16,6 +16,8 @@
 
 package com.example.supermarket.ui.screens
 
+
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,200 +28,222 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
-import com.example.supermarket.viewmodel.CartViewModel
+import com.example.supermarket.models.Product
 import com.example.supermarket.ui.Routes
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import com.example.supermarket.viewmodel.CartViewModel
 
+// 設計書ID: menu
+// 画面名: 店舗画面（商品一覧）
+// 機能:
+// - 左側に商品カテゴリ一覧を表示（8種類を想定）
+// - 右側に選択されたカテゴリの商品カードを一覧表示
+// - 各商品カードには画像・名称・単価・在庫数・選択数(+/-ボタン)・「カートに追加」ボタンを配置
+// - 画面下部「カートを見る」ボタンからカート画面(list)へ遷移
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuScreen(
     navController: NavController,
-    storeId: String,
-    cartViewModel: CartViewModel
+    cartViewModel: CartViewModel,
+    storeId: String
 ) {
     val store = StoreDataRepository.getStoreById(storeId)
-    val allProducts = StoreDataRepository.getProductsByStore(storeId)
 
-    // 設計書に従いカテゴリ8種
-    val categories = listOf(
-        "飲料", "食品", "調味料", "菓子",
-        "日用品", "冷蔵", "冷凍", "その他"
-    )
+    // 仮のカテゴリと商品データ / 临时分类和商品数据
+    val categories = listOf("飲料", "食品", "お菓子", "冷凍", "日用品", "調味料", "惣菜", "その他")
+    var selectedCategory by remember { mutableStateOf(categories.first()) }
 
-    var selectedCategory by remember { mutableStateOf(categories[0]) }
+    // 実際はカテゴリと紐付いた商品リストを取得する / 实际会按分类取得商品列表
+    val products = remember(selectedCategory) {
+        StoreDataRepository.getProducts().filter {
+            it.category == selectedCategory
+        }
+    }
 
-    // 選択カテゴリの商品だけ表示
-    val filteredProducts = allProducts.filter { it.category == selectedCategory }
-
-    // 個数管理（商品ID → 数量）
-    val quantities = remember { mutableStateMapOf<String, Int>() }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(store?.name ?: "商品一覧") },
+                title = {
+                    Text(store?.storeName ?: "店舗画面")
+                },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate(Routes.STORE_DETAIL) }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
                     }
                 }
             )
         },
         bottomBar = {
-            Button(
-                onClick = { navController.navigate(Routes.LIST) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
+            // 下部の「カートを見る」ボタン / 底部“查看购物车”按钮
+            Surface(
+                tonalElevation = 4.dp
             ) {
-                Text("カートを見る")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "カート内商品数: ${cartViewModel.cartItems.size}",
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = { navController.navigate(Routes.CART) }
+                    ) {
+                        Text("カートを見る")
+                    }
+                }
             }
         }
     ) { padding ->
-
-        if (store == null) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("店舗情報が見つかりません。")
-            }
-            return@Scaffold
-        }
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // ======================================================
-            // 左側カテゴリ一覧（幅固定）
-            // ======================================================
+            // 左側: カテゴリ一覧 / 左侧：分类列表
             Column(
                 modifier = Modifier
-                    .width(100.dp)
+                    .width(120.dp)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 verticalArrangement = Arrangement.Top
             ) {
                 categories.forEach { category ->
-                    val selected = (category == selectedCategory)
+                    val selected = category == selectedCategory
+                    val bgColor =
+                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else Color.Transparent
+                    val textColor =
+                        if (selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                else Color.Transparent
-                            )
+                            .height(56.dp)
+                            .background(bgColor)
                             .clickable { selectedCategory = category }
-                            .padding(8.dp)
+                            .padding(horizontal = 8.dp),
+                        contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
                             text = category,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                            color = textColor,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
             }
 
-            // ======================================================
-            // 右側商品一覧
-            // ======================================================
+            // 右側: 商品一覧 / 右侧：商品列表
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxHeight()
                     .weight(1f)
+                    .fillMaxHeight()
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(filteredProducts) { item ->
+                items(products) { product ->
+                    ProductCard(
+                        product = product,
+                        cartViewModel = cartViewModel
+                    )
+                }
+            }
+        }
+    }
+}
 
-                    // 数量初期化
-                    val qty = quantities[item.id] ?: 0
+// 商品カードコンポーネント / 商品卡片组件
+@Composable
+private fun ProductCard(
+    product: Product,
+    cartViewModel: CartViewModel
+) {
+    var quantity by remember { mutableStateOf(0) }
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 商品画像 / 商品图片
+            Image(
+                painter = painterResource(android.R.drawable.ic_menu_report_image),
+                contentDescription = product.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(72.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(text = "単価: ${product.price} 円")
+                Text("在庫数: 不明")
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 個数 +/- / 数量 +/- 按钮
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { if (quantity > 0) quantity-- },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        Text("-")
+                    }
+                    Text(text = quantity.toString())
+                    OutlinedButton(
+                        onClick = { quantity++ },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Text("+")
+                    }
+                }
 
-                            // 商品画像
-                            item.imageRes?.let { img ->
-                                Image(
-                                    painter = painterResource(id = img),
-                                    contentDescription = item.name,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(120.dp),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-
-                            // 商品名
-                            Text(
-                                text = item.name,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-
-                            // 価格
-                            Text("価格：${item.price} 円")
-
-                            // 在庫
-                            Text("在庫：${item.stock}")
-
-                            // ======================================================
-                            // 数量選択（－ ボタン、数量表示、＋ ボタン）
-                            // ======================================================
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-
-                                // －ボタン
-                                OutlinedButton(
-                                    onClick = {
-                                        if (qty > 0) quantities[item.id] = qty - 1
-                                    }
-                                ) { Text("－") }
-
-                                Text("$qty 個")
-
-                                // ＋ボタン（在庫以上は不可）
-                                OutlinedButton(
-                                    onClick = {
-                                        if (qty < item.stock) quantities[item.id] = qty + 1
-                                    }
-                                ) { Text("＋") }
-                            }
-
-                            // ======================================================
-                            // カートに追加
-                            // ======================================================
-                            Button(
-                                onClick = {
-                                    if (qty > 0) {
-                                        cartViewModel.addToCart(item, qty)
-                                        quantities[item.id] = 0  // 追加後数量リセット
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("カートに追加")
-                            }
+                // カートに追加ボタン / 加入购物车按钮
+                Button(
+                    onClick = {
+                        if (quantity > 0) {
+                            cartViewModel.addToCart(product, quantity)
+                            quantity = 0
                         }
                     }
+                ) {
+                    Text("カートに追加")
                 }
             }
         }

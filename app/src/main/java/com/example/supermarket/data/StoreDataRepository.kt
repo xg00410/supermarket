@@ -27,8 +27,8 @@ object StoreDataRepository {
             address = "神奈川県川崎市川崎区〇〇1-2-3",
             latitude = 35.5300,
             longitude = 139.7000,
-            imageRes = R.drawable.store_kawasaki,    // 店舗一覧用写真
-            floorMapRes = R.drawable.floor_kawasaki  // 店舗内平面図
+            imageRes = R.drawable.logo,    // 店舗一覧用写真
+            floorMapRes = R.drawable.logo  // 店舗内平面図
         ),
         Store(
             storeId = "S002",
@@ -36,8 +36,8 @@ object StoreDataRepository {
             address = "東京都大田区西蒲田4-5-6",
             latitude = 35.5620,
             longitude = 139.7160,
-            imageRes = R.drawable.store_kamata,
-            floorMapRes = R.drawable.floor_kamata
+            imageRes = R.drawable.logo,
+            floorMapRes = R.drawable.logo
         ),
         Store(
             storeId = "S003",
@@ -45,8 +45,8 @@ object StoreDataRepository {
             address = "東京都港区高輪3-4-5",
             latitude = 35.6280,
             longitude = 139.7390,
-            imageRes = R.drawable.store_takanawa,
-            floorMapRes = R.drawable.floor_takanawa
+            imageRes = R.drawable.logo,
+            floorMapRes = R.drawable.logo
         )
         // ★ 必要に応じて店舗を追加可能
     )
@@ -67,8 +67,7 @@ object StoreDataRepository {
             category = "飲料",
             price = 108.0,
             stock = 80,
-            imageRes = R.drawable.drink_oolong_500
-        ),
+            imageRes = R.drawable.logo        ),
         Product(
             productId = 1002,
             storeId = "S001",
@@ -77,8 +76,7 @@ object StoreDataRepository {
             category = "飲料",
             price = 198.0,
             stock = 60,
-            imageRes = R.drawable.drink_cola_15
-        ),
+            imageRes = R.drawable.logo        ),
         // 食品カテゴリ
         Product(
             productId = 2001,
@@ -88,7 +86,9 @@ object StoreDataRepository {
             category = "食品",
             price = 158.0,
             stock = 120,
-            imageRes = R.drawable.food_cupnoodle_syoyu
+            imageRes = R.drawable.logo
+
+
         ),
         Product(
             productId = 2002,
@@ -98,8 +98,7 @@ object StoreDataRepository {
             category = "食品",
             price = 198.0,
             stock = 90,
-            imageRes = R.drawable.food_retort_curry
-        ),
+            imageRes = R.drawable.logo        ),
         // 調味料カテゴリ
         Product(
             productId = 3001,
@@ -109,8 +108,7 @@ object StoreDataRepository {
             category = "調味料",
             price = 258.0,
             stock = 50,
-            imageRes = R.drawable.seasoning_soy_sauce
-        ),
+            imageRes = R.drawable.logo        ),
         // 菓子カテゴリ
         Product(
             productId = 4001,
@@ -120,8 +118,7 @@ object StoreDataRepository {
             category = "菓子",
             price = 138.0,
             stock = 70,
-            imageRes = R.drawable.snack_potato_chips
-        ),
+            imageRes = R.drawable.logo        ),
         // 日用品カテゴリ
         Product(
             productId = 5001,
@@ -131,8 +128,7 @@ object StoreDataRepository {
             category = "日用品",
             price = 298.0,
             stock = 40,
-            imageRes = R.drawable.daily_tissue_box
-        ),
+            imageRes = R.drawable.logo        ),
         // 冷蔵カテゴリ
         Product(
             productId = 6001,
@@ -142,8 +138,7 @@ object StoreDataRepository {
             category = "冷蔵",
             price = 198.0,
             stock = 50,
-            imageRes = R.drawable.refrigerated_milk_1l
-        ),
+            imageRes = R.drawable.logo        ),
         // 冷凍カテゴリ
         Product(
             productId = 7001,
@@ -153,8 +148,7 @@ object StoreDataRepository {
             category = "冷凍",
             price = 298.0,
             stock = 60,
-            imageRes = R.drawable.frozen_gyoza
-        ),
+            imageRes = R.drawable.logo        ),
         // その他カテゴリ
         Product(
             productId = 8001,
@@ -164,8 +158,7 @@ object StoreDataRepository {
             category = "その他",
             price = 198.0,
             stock = 30,
-            imageRes = R.drawable.other_ecobag_m
-        )
+            imageRes = R.drawable.logo        )
         // ★ ここから同じ形式で商品を増やしていけばOK（最終的に100件）
     )
 
@@ -218,5 +211,5 @@ object StoreDataRepository {
      * 全ての商品を取得
      * list2 や 管理機能で全件チェックしたい場合に使用可能。
      */
-    fun getAllProducts(): List<Product> = allProducts
+    fun getProducts(): List<Product> = allProducts
 }

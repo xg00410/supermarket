@@ -79,7 +79,8 @@ fun StoreMapExpandedScreen(
                     .height(280.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val mapRes = store.floorMapRes ?: R.drawable.sample_floor
+                val mapRes = R.drawable.logo//占位
+
 
                 Image(
                     painter = painterResource(id = mapRes),
