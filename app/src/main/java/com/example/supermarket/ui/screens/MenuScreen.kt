@@ -7,6 +7,7 @@
 //   - 右側にカテゴリ別の商品一覧を表示。
 //   - 商品画像／名前／価格／在庫／数量ボタン（＋／－）。
 //   - 画面下部に「カートを見る」ボタンを表示。
+//   - 店舗ごとのカート合計金額を下部に表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -46,6 +47,15 @@ fun MenuScreen(
         StoreDataRepository.getProductsByStore(storeId).filter {
             it.category == selectedCategory
         }
+    }
+
+    // 現在の店舗に紐づくカート内商品の合計金額
+    val storeCartTotal by remember(cartViewModel.cartItems, storeId) {
+        mutableStateOf(
+            cartViewModel.cartItems
+                .filter { it.storeId == storeId }
+                .sumOf { it.price * it.quantity }
+        )
     }
 
     Scaffold(
@@ -95,6 +105,14 @@ fun MenuScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // 現在の店舗のカート合計（参考表示）
+            Text(
+                text = "この店舗のカート合計：${storeCartTotal.toInt()} 円",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // カートへ
             Button(

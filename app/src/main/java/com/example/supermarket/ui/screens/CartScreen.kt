@@ -8,10 +8,13 @@
 //   - 合計金額の表示。
 //   - 「最短ルートへ」ボタンから route 画面へ遷移。
 //   - 戻るボタンで店舗商品一覧へ戻る。
+// 備考:
+//   - 行レイアウトを調整：左に画像、中央に商品情報、右に数量（－ 数量 ＋）。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,11 +23,13 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.R
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.viewmodel.CartViewModel
 
@@ -35,9 +40,6 @@ fun CartScreen(
     cartViewModel: CartViewModel
 ) {
     val cartItems = cartViewModel.cartItems
-    val totalPrice by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(0.0)
-    }
 
     Scaffold(
         topBar = {
@@ -86,46 +88,72 @@ fun CartScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp)
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-
-                                Text(
-                                    text = item.name,
-                                    style = MaterialTheme.typography.bodyLarge
+                                // 左：画像（全商品共通のダミー画像）
+                                Image(
+                                    painter = painterResource(id = R.drawable.logo),
+                                    contentDescription = "商品画像",
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .padding(end = 8.dp),
+                                    contentScale = ContentScale.Crop
                                 )
-                                Text("数量：${item.quantity}")
-                                Text("価格：${item.price} 円")
 
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                // 中央：商品情報
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
                                 ) {
+                                    Text(
+                                        text = item.name,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text("単価：${item.price.toInt()} 円")
+                                    Text("小計：${(item.price * item.quantity).toInt()} 円")
+                                }
 
+                                // 右：数量コントロール ＋ 削除ボタン
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // 数量（－ 数量 ＋）
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         OutlinedButton(
                                             onClick = {
-                                                cartViewModel.increaseQuantity(item.productId)
-                                            }
+                                                cartViewModel.decreaseQuantity(item.productId)
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("+")
+                                            Text("－")
                                         }
+
+                                        Text(
+                                            text = item.quantity.toString(),
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+
                                         OutlinedButton(
                                             onClick = {
-                                                cartViewModel.decreaseQuantity(item.productId)
-                                            }
+                                                cartViewModel.increaseQuantity(item.productId)
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
                                         ) {
-                                            Text("-")
+                                            Text("＋")
                                         }
                                     }
 
+                                    // 削除ボタン
                                     IconButton(
                                         onClick = {
                                             cartViewModel.removeItem(item.productId)

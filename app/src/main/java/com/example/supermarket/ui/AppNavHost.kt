@@ -114,7 +114,27 @@ fun AppNavHost(
         composable(Routes.STORE_MAP) {
             StoreMapScreen(navController)
         }
+        composable(
+            route = Routes.STORE_PREFECTURE + "/{regionId}"
+        ) { backStack ->
+            val regionId = backStack.arguments?.getString("regionId")!!.toInt()
+            StorePrefectureScreen(navController, regionId)
+        }
 
+        composable(
+            route = Routes.STORE_RESULT + "/keyword={keyword}/pref={pref}"
+        ) { backStack ->
+            val keyword = backStack.arguments?.getString("keyword")
+            val pref = backStack.arguments?.getString("pref")!!.toInt()
+            StoreResultScreen(navController, keyword, pref)
+        }
+
+        composable(
+            route = Routes.STORE_DETAIL + "/{storeId}"
+        ) { backStack ->
+            val storeId = backStack.arguments?.getString("storeId")!!
+            StoreDetailScreen(navController, storeId)
+        }
         composable(
             route = "${Routes.STORE_REGION}/{prefecture}",
             arguments = listOf(navArgument("prefecture") { type = NavType.StringType })

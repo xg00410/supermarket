@@ -48,6 +48,16 @@ object Routes {
     const val STORE_MAP_EXPANDED = "store_map_expanded" // 店舗地図拡大（storeId付き）
     const val STORE_DETAIL = "store_detail"    // 店舗拡大画面（storeId付き）
 
+
+    // 第二层：都道府県
+    const val STORE_PREFECTURE = "store_prefecture"
+
+    // 第三层：検索結果
+    const val STORE_RESULT = "store_result"
+
+    // 店舗詳細
+
+
     // ------------------------
     // 商品一覧・カート・ルート
     // ------------------------
