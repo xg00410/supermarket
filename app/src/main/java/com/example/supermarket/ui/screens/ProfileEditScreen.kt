@@ -1,10 +1,9 @@
 // =========================================================
 // File: ProfileEditScreen.kt
 // 設計書ID: profile_edit
-// 画面名: プロフィール編集画面
+// 画面名: プロフィール編集
 // 役割:
-//   - ユーザー情報（名前・電話番号・メール）を編集する画面。
-//   - 実際の保存処理はダミー。UIフローを構築。
+//   - ユーザーの基本情報を編集する（ダミー実装）。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -15,25 +14,28 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.supermarket.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileEditScreen(
-    onBack: () -> Unit,
-    onSaved: () -> Unit
-) {
-    var name by remember { mutableStateOf("テストユーザー") }
-    var phone by remember { mutableStateOf("090-xxxx-xxxx") }
-    var email by remember { mutableStateOf("test@example.com") }
+fun ProfileEditScreen(navController: NavController) {
+
+    var name by remember { mutableStateOf("山田 太郎") }
+    var email by remember { mutableStateOf("sample@example.com") }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("プロフィール編集") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "戻る"
+                        )
                     }
                 }
             )
@@ -42,23 +44,16 @@ fun ProfileEditScreen(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(24.dp)
+                .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("名前") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text("電話番号") },
+                label = { Text("氏名") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -69,10 +64,11 @@ fun ProfileEditScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             Button(
-                onClick = onSaved,
+                onClick = {
+                    // 実際のアプリではここでサーバー更新などを行う
+                    navController.popBackStack()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存する")

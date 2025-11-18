@@ -3,61 +3,64 @@
 // 設計書ID: gps_permission
 // 画面名: 位置情報許可画面
 // 役割:
-//   - アプリが位置情報を利用する理由を説明する。
-//   - 「許可する」ボタンで店舗地図画面へ遷移する想定。
-//   - 「許可しない」ボタンで前の画面へ戻る。
+//   - 位置情報利用の説明を表示。
+//   - ユーザーに許可／拒否を選ばせる（ダミー処理）。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.ui.Routes
+import com.example.supermarket.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GpsPermissionScreen(
-    navController: NavController
-) {
+fun GpsPermissionScreen(navController: NavController) {
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("位置情報の許可") }
+                title = { Text("位置情報の許可") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "戻る"
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("近くの店舗を地図上に表示するため、位置情報の利用を許可してください。")
+                Text("最短ルート案内のために、位置情報を利用します。")
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { navController.popBackStack() }
-                    ) {
+                    Button(onClick = { navController.popBackStack() }) {
                         Text("許可しない")
                     }
-                    Button(
-                        onClick = {
-                            navController.navigate(Routes.STORE_MAP)
-                        }
-                    ) {
+                    Button(onClick = { navController.popBackStack() }) {
                         Text("許可する")
                     }
                 }

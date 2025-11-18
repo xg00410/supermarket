@@ -1,50 +1,40 @@
 // =========================================================
 // File: MainScreen.kt
 // 設計書ID: main
-// 画面名: メイン画面
+// 画面名: メイン画面（アプリ入口）
 // 役割:
-//   - アプリ起動時の最初の画面。
-//   - ログイン／新規登録への導線。
-//   - 画面下部にチーム名の著作権表記を表示。
+//   - ログイン / 新規登録 への遷移。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.R
 import com.example.supermarket.ui.Routes
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-    navController: NavController
-) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+fun MainScreen(navController: NavController) {
 
-        // メインコンテンツ
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("BAROGAKI") })
+        }
+    ) { padding ->
+
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .align(Alignment.Center),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(padding)
+                .padding(32.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "アプリロゴ",
-                modifier = Modifier.size(140.dp)
-            )
 
             Button(
                 onClick = { navController.navigate(Routes.LOGIN) },
@@ -60,14 +50,5 @@ fun MainScreen(
                 Text("新規登録")
             }
         }
-
-        // 著作権表記（画面下部固定）
-        Text(
-            text = "© 2025 Supermarket Team",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-        )
     }
 }

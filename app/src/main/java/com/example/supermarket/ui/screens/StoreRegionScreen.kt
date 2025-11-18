@@ -3,8 +3,8 @@
 // 設計書ID: store_region
 // 画面名: 都道府県別店舗一覧画面
 // 役割:
-//   - 受け取った都道府県名（prefecture）に基づいて店舗を絞り込み表示する。
-//   - 店舗をタップすると店舗拡大画面へ遷移する。
+//   - 選択された都道府県に属する店舗一覧を表示する。
+//   - 店舗カードをタップすると「店舗拡大画面(StoreDetail)」へ遷移する。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -38,7 +38,7 @@ fun StoreRegionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("店舗一覧：$prefecture") },
+                title = { Text("$prefecture の店舗一覧") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
@@ -55,7 +55,7 @@ fun StoreRegionScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("この都道府県には登録店舗がありません。")
+                Text("この都道府県には登録された店舗がありません。")
             }
             return@Scaffold
         }
@@ -78,8 +78,7 @@ fun StoreRegionScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                            .padding(12.dp)
                     ) {
                         Text(store.storeName, style = MaterialTheme.typography.titleMedium)
                         Text(store.address, style = MaterialTheme.typography.bodyMedium)

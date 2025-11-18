@@ -20,7 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.supermarket.ui.Routes
-import com.example.supermarket.ui.theme.AppNavHost
+import com.example.supermarket.ui.AppNavHost
+
 import com.example.supermarket.viewmodel.CartViewModel
 
 /**

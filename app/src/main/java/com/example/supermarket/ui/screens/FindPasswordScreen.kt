@@ -1,50 +1,35 @@
 // =========================================================
 // File: FindPasswordScreen.kt
-// 設計書ID: findpwd
-// 画面名: パスワード再設定（ID + メール入力）
+// 画面名: パスワード検索
 // 役割:
-//   - ユーザーIDとメールを入力し、本人確認として次の画面へ進む。
+//   - ユーザーID を入力し、PasswordReset へ遷移
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FindPasswordScreen(
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
+fun FindPasswordScreen(navController: NavController) {
+
     var userId by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("パスワード再設定") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
-                    }
-                }
-            )
-        }
+        topBar = { TopAppBar(title = { Text("パスワード検索") }) }
     ) { padding ->
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
                 .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
             OutlinedTextField(
@@ -54,25 +39,8 @@ fun FindPasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("登録メールアドレス") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (errorMessage.isNotEmpty()) {
-                Text(errorMessage, color = MaterialTheme.colorScheme.error)
-            }
-
             Button(
-                onClick = {
-                    if (userId.isBlank() || email.isBlank()) {
-                        errorMessage = "すべて入力してください。"
-                    } else {
-                        onNext()
-                    }
-                },
+                onClick = { navController.navigate(Routes.PASSWORD_RESET) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("次へ")

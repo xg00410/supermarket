@@ -1,138 +1,155 @@
 // =========================================================
 // File: OrderHistoryScreen.kt
 // 設計書ID: order_history
-// 画面名: 履歴一覧画面
+// 画面名: 購入履歴
 // 役割:
-//   - 過去の購入履歴を、日付 → 店舗 → 商品の順に一覧表示する。
-//   - 日付単位でセクション見出しを表示（新しい日付から順に並べる）。
-//   - 同じ日の中では、注文時刻の新しい順に店舗ブロックを並べる。
-//   - 戻るボタンで前の画面に戻る（マイページまたはボトムナビの呼び出し元）。
-// 更新者: 郭
-// 更新日: 2025-11-18
+//   - 日付ごとに購入履歴をグループ化。
+//   - 同じ日付内で店舗ごとに履歴を分類。
+//   - 商品画像・名称・数量・価格・小計を表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.viewmodel.CartViewModel
-import java.time.format.DateTimeFormatter
+import com.example.supermarket.data.HistoryRepository
+import com.example.supermarket.models.HistoryItem
+import com.example.supermarket.models.HistoryProduct
+import com.example.supermarket.R
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrderHistoryScreen(
-    navController: NavController,
-    cartViewModel: CartViewModel
-) {
-    val history = cartViewModel.orderHistory
+fun OrderHistoryScreen(navController: NavController) {
 
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val historyList = HistoryRepository.getAll()
+
+    // 日付を yyyy/MM/dd 単位でグループ化
+    val groupedByDate: Map<String, List<HistoryItem>> = historyList.groupBy { item ->
+        item.dateTime.substring(0, 10)  // "yyyy/MM/dd"
+    }
+
+    // 日付降順に並べる
+    val sortedDates = groupedByDate.keys.sortedDescending()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("履歴一覧") },
+                title = { Text("購入履歴") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "戻る"
+                        )
                     }
                 }
             )
         }
     ) { padding ->
 
-        if (history.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("注文履歴はありません。")
-            }
-            return@Scaffold
-        }
-
-        // 日付（LocalDate）ごとにグルーピングし、新しい日付順に並べる
-        val groupedByDate = history.groupBy { it.orderedAt.toLocalDate() }
-            .toSortedMap(compareByDescending { it })
-
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            groupedByDate.forEach { (date, ordersInDate) ->
 
-                // ---- 日付セクションヘッダ ----
-                item(key = "date_${date}") {
+            // 日付ごとのブロック
+            items(sortedDates) { date ->
+
+                val itemsInDate = groupedByDate[date] ?: emptyList()
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                    // --------------------------------------------------------
+                    // 日付ヘッダー
+                    // --------------------------------------------------------
                     Text(
-                        text = date.format(dateFormatter),
-                        style = MaterialTheme.typography.titleMedium
+                        text = date,
+                        style = MaterialTheme.typography.headlineSmall
                     )
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
-                }
 
-                // ---- 同一日付内の店舗ごとの注文 ----
-                val sortedOrders = ordersInDate.sortedByDescending { it.orderedAt }
-                items(sortedOrders, key = { it.orderId }) { order ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = order.storeName,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = order.orderedAt.format(timeFormatter),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                    // 店舗ごとにグループ化
+                    val groupedByStore = itemsInDate.groupBy { it.storeName }
+
+                    groupedByStore.forEach { (storeName, storeHistoryList) ->
+
+                        // --------------------------------------------------------
+                        // 店舗名
+                        // --------------------------------------------------------
+                        Text(
+                            text = "店舗：$storeName",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+
+                        // 同じ店舗内の履歴は時間降順
+                        val sortedStoreHistory =
+                            storeHistoryList.sortedByDescending { it.dateTime }
+
+                        sortedStoreHistory.forEach { historyItem ->
+
+                            historyItem.items.forEach { product ->
+                                HistoryItemRow(product)
                             }
 
-                            Divider()
-
-                            // 商品一覧
-                            order.items.forEach { item ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 2.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column {
-                                        Text(item.name)
-                                        Text("数量：${item.quantity}")
-                                    }
-                                    Text("¥${(item.price * item.quantity).toInt()}")
-                                }
-                            }
+                            Divider(modifier = Modifier.padding(vertical = 8.dp))
                         }
                     }
                 }
             }
         }
+    }
+}
+
+// =========================================================
+// 商品1行（画像 + 商品名 + 数量 + 小計）
+// =========================================================
+@Composable
+private fun HistoryItemRow(
+    product: HistoryProduct
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        // 画像
+        Image(
+            painter = painterResource(id = product.imageRes),
+            contentDescription = null,
+            modifier = Modifier.size(60.dp)
+        )
+
+        // 商品情報
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(product.name, style = MaterialTheme.typography.titleMedium)
+            Text("数量：${product.quantity}")
+            Text("単価：¥${product.price}")
+        }
+
+        // 小計
+        Text(
+            text = "¥${(product.quantity * product.price).toInt()}",
+            style = MaterialTheme.typography.titleMedium
+        )
     }
 }
