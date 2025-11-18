@@ -10,14 +10,13 @@
 package com.example.supermarket.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.*
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 
-/**
- * MainScaffold
- * 带标题 + 底部导航栏的统一布局
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(

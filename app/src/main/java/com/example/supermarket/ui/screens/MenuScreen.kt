@@ -62,11 +62,13 @@ fun MenuScreen(
     var selectedCategory by remember { mutableStateOf(categories.first()) }
 
     // 実際はカテゴリと紐付いた商品リストを取得する / 实际会按分类取得商品列表
+    // 実際はカテゴリと紐付いた商品リストを取得する / 分类过滤
     val products = remember(selectedCategory) {
-        StoreDataRepository.getProducts().filter {
+        StoreDataRepository.getAllProducts().filter {
             it.category == selectedCategory
         }
     }
+
 
 
     Scaffold(
@@ -77,33 +79,26 @@ fun MenuScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }
+
+
+
             )
         },
         bottomBar = {
-            // 下部の「カートを見る」ボタン / 底部“查看购物车”按钮
-            Surface(
-                tonalElevation = 4.dp
+            Button(
+                onClick = { navController.navigate(Routes.CART) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "カート内商品数: ${cartViewModel.cartItems.size}",
-                        modifier = Modifier.weight(1f)
-                    )
-                    Button(
-                        onClick = { navController.navigate(Routes.CART) }
-                    ) {
-                        Text("カートを見る")
-                    }
-                }
+                Text("カートを見る")
             }
+
+
+
         }
     ) { padding ->
         Row(

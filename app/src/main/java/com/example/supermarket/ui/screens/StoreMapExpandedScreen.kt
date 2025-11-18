@@ -17,16 +17,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.R
 import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.ui.Routes
-import androidx.compose.ui.layout.ContentScale
-import com.example.supermarket.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,18 +70,13 @@ fun StoreMapExpandedScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // =========================================================
-            // 店舗内平面図（画像）
-            // =========================================================
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val mapRes = R.drawable.logo//占位
-
-
+                val mapRes = store.floorMapRes ?: R.drawable.logo
                 Image(
                     painter = painterResource(id = mapRes),
                     contentDescription = "floor map",
@@ -90,11 +85,11 @@ fun StoreMapExpandedScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Text(store.storeName, style = MaterialTheme.typography.titleMedium)
+            Text(store.address, style = MaterialTheme.typography.bodyMedium)
 
-            // =========================================================
-            // 商品一覧へ遷移するボタン
-            // =========================================================
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
                     navController.navigate("${Routes.MENU}/$storeId")

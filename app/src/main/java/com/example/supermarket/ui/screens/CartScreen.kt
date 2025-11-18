@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.viewmodel.CartViewModel
 import com.example.supermarket.ui.Routes
+import com.example.supermarket.ui.components.BottomNavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,16 +43,21 @@ fun CartScreen(
     val totalPrice = cartItems.sumOf { it.price * it.quantity }
 
     Scaffold(
-
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("カート") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
+                    IconButton(
+                        onClick = { navController.popBackStack() }
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }
+
             )
+        },
+        bottomBar = {
+            BottomNavBar(navController)
         }
 
     ) { padding ->

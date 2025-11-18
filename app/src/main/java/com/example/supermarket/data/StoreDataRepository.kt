@@ -17,8 +17,7 @@ import com.example.supermarket.models.Store
 object StoreDataRepository {
 
     // -----------------------------------------------------
-    // 店舗マスタ（設計書 Store / Store.Curent location 対応）
-    // 本番では DB の stores テーブルと対応する想定。
+    // 店舗マスタ
     // -----------------------------------------------------
     private val stores: List<Store> = listOf(
         Store(
@@ -27,8 +26,8 @@ object StoreDataRepository {
             address = "神奈川県川崎市川崎区〇〇1-2-3",
             latitude = 35.5300,
             longitude = 139.7000,
-            imageRes = R.drawable.logo,    // 店舗一覧用写真
-            floorMapRes = R.drawable.logo  // 店舗内平面図
+            imageRes = R.drawable.logo,         // ★ 全部 logo
+            floorMapRes = R.drawable.logo       // ★ 全部 logo
         ),
         Store(
             storeId = "S002",
@@ -36,8 +35,8 @@ object StoreDataRepository {
             address = "東京都大田区西蒲田4-5-6",
             latitude = 35.5620,
             longitude = 139.7160,
-            imageRes = R.drawable.logo,
-            floorMapRes = R.drawable.logo
+            imageRes = R.drawable.logo,         // ★
+            floorMapRes = R.drawable.logo       // ★
         ),
         Store(
             storeId = "S003",
@@ -45,29 +44,26 @@ object StoreDataRepository {
             address = "東京都港区高輪3-4-5",
             latitude = 35.6280,
             longitude = 139.7390,
-            imageRes = R.drawable.logo,
-            floorMapRes = R.drawable.logo
+            imageRes = R.drawable.logo,         // ★
+            floorMapRes = R.drawable.logo       // ★
         )
-        // ★ 必要に応じて店舗を追加可能
     )
 
     // -----------------------------------------------------
-    // 商品マスタ（設計書 menu 対応）
-    // - ここではサンプルのみ記述。
-    // - 実際には 100 商品まで拡張予定。
-    // - 全店舗で同一商品を扱うイメージで「共通商品マスタ」として定義。
+    // 共通商品マスタ
     // -----------------------------------------------------
     private val baseProducts: List<Product> = listOf(
         // 飲料カテゴリ
         Product(
             productId = 1001,
-            storeId = "S001",          // 初期割り当て店舗（後で複製して他店舗にも展開）
+            storeId = "S001",
             storeName = "スーパーマーケット川崎駅前店",
             name = "お〜いお茶 500ml",
             category = "飲料",
             price = 108.0,
             stock = 80,
-            imageRes = R.drawable.logo        ),
+            imageRes = R.drawable.logo      // ★ 全商品 logo
+        ),
         Product(
             productId = 1002,
             storeId = "S001",
@@ -76,8 +72,10 @@ object StoreDataRepository {
             category = "飲料",
             price = 198.0,
             stock = 60,
-            imageRes = R.drawable.logo        ),
-        // 食品カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 食品
         Product(
             productId = 2001,
             storeId = "S001",
@@ -87,8 +85,6 @@ object StoreDataRepository {
             price = 158.0,
             stock = 120,
             imageRes = R.drawable.logo
-
-
         ),
         Product(
             productId = 2002,
@@ -98,8 +94,10 @@ object StoreDataRepository {
             category = "食品",
             price = 198.0,
             stock = 90,
-            imageRes = R.drawable.logo        ),
-        // 調味料カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 調味料
         Product(
             productId = 3001,
             storeId = "S001",
@@ -108,8 +106,10 @@ object StoreDataRepository {
             category = "調味料",
             price = 258.0,
             stock = 50,
-            imageRes = R.drawable.logo        ),
-        // 菓子カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 菓子
         Product(
             productId = 4001,
             storeId = "S001",
@@ -118,8 +118,10 @@ object StoreDataRepository {
             category = "菓子",
             price = 138.0,
             stock = 70,
-            imageRes = R.drawable.logo        ),
-        // 日用品カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 日用品
         Product(
             productId = 5001,
             storeId = "S001",
@@ -128,8 +130,10 @@ object StoreDataRepository {
             category = "日用品",
             price = 298.0,
             stock = 40,
-            imageRes = R.drawable.logo        ),
-        // 冷蔵カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 冷蔵
         Product(
             productId = 6001,
             storeId = "S001",
@@ -138,8 +142,10 @@ object StoreDataRepository {
             category = "冷蔵",
             price = 198.0,
             stock = 50,
-            imageRes = R.drawable.logo        ),
-        // 冷凍カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // 冷凍
         Product(
             productId = 7001,
             storeId = "S001",
@@ -148,8 +154,10 @@ object StoreDataRepository {
             category = "冷凍",
             price = 298.0,
             stock = 60,
-            imageRes = R.drawable.logo        ),
-        // その他カテゴリ
+            imageRes = R.drawable.logo
+        ),
+
+        // その他
         Product(
             productId = 8001,
             storeId = "S001",
@@ -158,16 +166,14 @@ object StoreDataRepository {
             category = "その他",
             price = 198.0,
             stock = 30,
-            imageRes = R.drawable.logo        )
-        // ★ ここから同じ形式で商品を増やしていけばOK（最終的に100件）
+            imageRes = R.drawable.logo
+        )
     )
 
     // -----------------------------------------------------
-    // A案：共通商品マスタを全店舗に展開するイメージ
-    //   - 1つの baseProducts を各店舗用に複製し storeId/storeName を差し替え
-    //   - 「同じ商品が複数店舗に存在する」設計
+    // 全店舗 × 全商品 = 展開後の商品一覧
     // -----------------------------------------------------
-    private val allProducts: List<Product> by lazy {
+    private val internalAllProducts: List<Product> by lazy {
         val result = mutableListOf<Product>()
         var runningId = 1000
 
@@ -175,41 +181,28 @@ object StoreDataRepository {
             baseProducts.forEach { p ->
                 result.add(
                     p.copy(
-                        productId = runningId++,        // 各店舗ごとに一意なIDを振り直す
+                        productId = runningId++,
                         storeId = store.storeId,
                         storeName = store.storeName
                     )
                 )
             }
         }
+
         result
     }
 
     // -----------------------------------------------------
-    // 公開用関数群（画面から利用）
+    // 公開 API
     // -----------------------------------------------------
 
-    /**
-     * 全店舗一覧を取得
-     */
     fun getAllStores(): List<Store> = stores
 
-    /**
-     * 店舗IDから店舗情報を取得
-     */
     fun getStoreById(storeId: String): Store? =
         stores.find { it.storeId == storeId }
 
-    /**
-     * 店舗IDに紐づく商品一覧を取得
-     * menu画面などで使用。
-     */
     fun getProductsByStore(storeId: String): List<Product> =
-        allProducts.filter { it.storeId == storeId }
+        internalAllProducts.filter { it.storeId == storeId }
 
-    /**
-     * 全ての商品を取得
-     * list2 や 管理機能で全件チェックしたい場合に使用可能。
-     */
-    fun getProducts(): List<Product> = allProducts
+    fun getAllProducts(): List<Product> = internalAllProducts
 }

@@ -53,9 +53,10 @@ fun RouteScreen(navController: NavController) {
                 title = { Text("ルート案内") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る / 返回")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }
+
             )
         }
     ) { padding ->

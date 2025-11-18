@@ -9,29 +9,22 @@ package com.example.supermarket.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-
-// Navigation
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-
-// ViewModel
-import com.example.supermarket.viewmodel.CartViewModel
-
-// Screens
-import com.example.supermarket.ui.components.ResultTemplateScreen
 import com.example.supermarket.ui.screens.*
 import com.example.supermarket.ui.screens.successscreen.LoginSuccessScreen
+import com.example.supermarket.ui.screens.successscreen.RegisterSuccessScreen
 import com.example.supermarket.ui.screens.successscreen.PasswordResetSuccessScreen
+import com.example.supermarket.viewmodel.CartViewModel
 
 @Composable
 fun AppNavHost(
-    modifier: Modifier = Modifier,
     navController: NavHostController,
-    cartViewModel: CartViewModel
+    cartViewModel: CartViewModel,
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
@@ -39,14 +32,12 @@ fun AppNavHost(
         modifier = modifier
     ) {
 
-        // -------------------------------
         // メイン
-        // -------------------------------
-        composable(Routes.MAIN) { MainScreen(navController) }
+        composable(Routes.MAIN) {
+            MainScreen(navController)
+        }
 
-        // -------------------------------
         // ログイン
-        // -------------------------------
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoginSuccess = { navController.navigate(Routes.LOGIN_SUCCESS) },
@@ -57,39 +48,27 @@ fun AppNavHost(
 
         composable(Routes.LOGIN_SUCCESS) {
             LoginSuccessScreen(navController)
-
         }
 
-        // -------------------------------
         // 新規登録
-        // -------------------------------
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onBack = { navController.popBackStack() },
-                onRegisterSuccess = {
-                    navController.navigate(Routes.REGISTER_SUCCESS)
-                }
+                onRegisterSuccess = { navController.navigate(Routes.REGISTER_SUCCESS) }
             )
         }
 
         composable(Routes.REGISTER_SUCCESS) {
-            ResultTemplateScreen(
-                titleText = "登録完了！",
-                buttonText = "ログインへ",
-                onButtonClick = { navController.navigate(Routes.LOGIN) }
-            )
+            RegisterSuccessScreen(navController)
         }
 
-        // -------------------------------
-        // パスワード再設定
-        // -------------------------------
+        // パスワード再設定フロー
         composable(Routes.FIND_PASSWORD) {
             FindPasswordScreen(
                 onBack = { navController.popBackStack() },
                 onNext = { navController.navigate(Routes.PASSWORD_RESET) }
             )
         }
-
 
         composable(Routes.PASSWORD_RESET) {
             PasswordResetScreen(
@@ -104,50 +83,46 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------------
-        // 店舗選択（入口）
-        // -------------------------------
+        // 店舗選択・地図
         composable(Routes.STORE_SELECT) {
             StoreSelectScreen(navController)
         }
 
-        // 位置情報許可
         composable(Routes.GPS_PERMISSION) {
             GpsPermissionScreen(navController)
         }
 
-        // 店舗マップ画面（現在地）
         composable(Routes.STORE_MAP) {
             StoreMapScreen(navController)
         }
 
-        // -------------------------------
-        // 都道府県一覧
-        // -------------------------------
+        // 都道府県 → 店舗一覧
         composable(Routes.STORE_REGION) {
             StoreRegionScreen(navController)
         }
 
-        // 都道府県 → 店舗一覧
         composable(
             route = "${Routes.STORE_REGION}/{prefecture}",
             arguments = listOf(navArgument("prefecture") { type = NavType.StringType })
         ) { backStackEntry ->
             val prefecture = backStackEntry.arguments?.getString("prefecture") ?: ""
-            StoreRegionDetailScreen(navController, prefecture)
+            StoreRegionDetailScreen(
+                navController = navController,
+                prefecture = prefecture
+            )
         }
 
-        // -------------------------------
-        // 店舗詳細画面
-        // -------------------------------
-        composable("${Routes.STORE_DETAIL}/{storeId}") { backStackEntry ->
+        // 店舗詳細
+        composable(
+            route = "${Routes.STORE_DETAIL}/{storeId}",
+            arguments = listOf(navArgument("storeId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
             StoreDetailScreen(
                 storeId = storeId,
                 onBack = { navController.popBackStack() },
                 onViewStoreMap = {
-                    // ここでは店舗マップ画面(store_Current)へ遷移 / 这里先跳到现有的店内地图画面
-                    navController.navigate(Routes.STORE_MAP)
+                    navController.navigate("${Routes.STORE_MAP_EXPANDED}/$storeId")
                 },
                 onViewMenu = {
                     navController.navigate("${Routes.MENU}/$storeId")
@@ -155,9 +130,38 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------------
-        // カート画面（list）
-        // -------------------------------
+        // 店舗内マップ拡大
+        composable(
+            route = "${Routes.STORE_MAP_EXPANDED}/{storeId}",
+            arguments = listOf(navArgument("storeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
+            StoreMapExpandedScreen(navController, storeId)
+        }
+
+        // 商品一覧（デフォルトS001用）
+        composable(Routes.MENU) {
+            MenuScreen(
+                navController = navController,
+                storeId = "S001",
+                cartViewModel = cartViewModel
+            )
+        }
+
+        // 商品一覧（storeId付き）
+        composable(
+            route = "${Routes.MENU}/{storeId}",
+            arguments = listOf(navArgument("storeId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: "S001"
+            MenuScreen(
+                navController = navController,
+                storeId = storeId,
+                cartViewModel = cartViewModel
+            )
+        }
+
+        // カート
         composable(Routes.CART) {
             CartScreen(
                 navController = navController,
@@ -165,50 +169,19 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------------
-        // ルート案内画面（route）
-        // -------------------------------
+        // 最短ルート
         composable(Routes.ROUTE) {
-            RouteScreen(navController = navController)
+            RouteScreen(navController)
         }
 
-        // -------------------------------
-        // 注文履歴画面
-        // -------------------------------
-        composable(Routes.ORDER_HISTORY) {
-            OrderHistoryScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // -------------------------------
-        // 設定画面
-        // -------------------------------
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // -------------------------------
-        // 利用規約画面
-        // -------------------------------
-        composable(Routes.TERMS) {
-            TermsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // -------------------------------
-        // マイページ（プロフィール）関連
-        // -------------------------------
+        // マイページ
         composable(Routes.PROFILE) {
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(Routes.PROFILE_EDIT) },
+                onOrderHistory = { navController.navigate(Routes.ORDER_HISTORY) },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
-                onTerms = { navController.navigate(Routes.TERMS) },
-                onOrderHistory = { navController.navigate(Routes.ORDER_HISTORY) }
+                onTerms = { navController.navigate(Routes.TERMS) }
             )
         }
 
@@ -219,12 +192,21 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------------
-        // ヘルプ画面（任意）
-        // -------------------------------
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.TERMS) {
+            TermsScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Routes.ORDER_HISTORY) {
+            OrderHistoryScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ヘルプ
         composable(Routes.HELP) {
             HelpScreen(navController)
         }
-
     }
 }
