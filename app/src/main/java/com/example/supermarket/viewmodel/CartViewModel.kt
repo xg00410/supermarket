@@ -63,6 +63,25 @@ class CartViewModel : ViewModel() {
         updateSelectionState()
     }
 
+    fun removeFromCart(product: Product) {
+        val existingItem = _cartItems.value.find { it.product.productId == product.productId }
+
+        if (existingItem != null) {
+            if (existingItem.quantity > 1) {
+                // 数量减 1
+                val updatedList = _cartItems.value.toMutableList()
+                val index = updatedList.indexOf(existingItem)
+                updatedList[index] = existingItem.copy(quantity = existingItem.quantity - 1)
+                _cartItems.value = updatedList
+            } else {
+                // 数量减到 0 → 从购物车移除
+                _cartItems.value = _cartItems.value.filterNot {
+                    it.product.productId == product.productId
+                }
+            }
+        }
+    }
+
     // ======================================================
     // 数量 +1
     // ======================================================
