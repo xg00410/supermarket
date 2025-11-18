@@ -13,6 +13,8 @@ package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +38,13 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("新規登録") }
+                title = { Text("新規登録") },
+                navigationIcon = {
+                    IconButton(onClick = {onBack()
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    }
+                }
             )
         }
     ) { padding ->
@@ -114,9 +122,6 @@ fun RegisterScreen(
                 Text("登録")
             }
 
-            TextButton(onClick = onBack) {
-                Text("戻る")
-            }
         }
     }
 }
