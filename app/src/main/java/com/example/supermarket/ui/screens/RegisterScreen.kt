@@ -31,6 +31,7 @@ fun RegisterScreen(
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var agree by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
@@ -78,7 +79,28 @@ fun RegisterScreen(
                 label = { Text("氏名（必須）") },
                 modifier = Modifier.fillMaxWidth()
             )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("性別", style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = gender == "男",
+                        onClick = { gender = "男" }
+                    )
+                    Text("男", modifier = Modifier.padding(end = 8.dp))
 
+                    RadioButton(
+                        selected = gender == "女",
+                        onClick = { gender = "女" }
+                    )
+                    Text("女", modifier = Modifier.padding(end = 8.dp))
+
+                    RadioButton(
+                        selected = gender == "その他",
+                        onClick = { gender = "その他" }
+                    )
+                    Text("その他")
+                }
+            }
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -110,7 +132,10 @@ fun RegisterScreen(
                 onClick = {
                     if (userId.isBlank() || password.isBlank() || name.isBlank() || email.isBlank()) {
                         error = "必須項目を入力してください"
-                    } else if (!agree) {
+                    } else if (gender.isBlank()) {
+                        error = "性別を選択してください"
+                    }
+                    else if (!agree) {
                         error = "利用規約に同意してください"
                     } else {
                         error = ""
