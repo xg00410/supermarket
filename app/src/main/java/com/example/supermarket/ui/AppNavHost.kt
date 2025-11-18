@@ -119,16 +119,11 @@ fun AppNavHost(
         ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
             StoreDetailScreen(
-                storeId = storeId,
-                onBack = { navController.popBackStack() },
-                onViewStoreMap = {
-                    navController.navigate("${Routes.STORE_MAP_EXPANDED}/$storeId")
-                },
-                onViewMenu = {
-                    navController.navigate("${Routes.MENU}/$storeId")
-                }
+                navController = navController,
+                storeId = storeId
             )
         }
+
 
         // 店舗内マップ拡大
         composable(
@@ -160,6 +155,16 @@ fun AppNavHost(
                 cartViewModel = cartViewModel
             )
         }
+        composable("menu/{storeId}") { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
+            MenuScreen(navController, cartViewModel, storeId)
+        }
+
+        composable("store_map_expanded/{storeId}") { backStackEntry ->
+            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
+            StoreMapExpandedScreen(navController, storeId)
+        }
+
 
         // カート
         composable(Routes.CART) {
