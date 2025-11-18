@@ -1,17 +1,23 @@
 // =========================================================
 // File: ProfileScreen.kt
-// 概要: ユーザーのプロフィール情報を表示する画面。
-//設計書ID: なし（追加機能）
-//画面名: プロファイル画面
-// 更新者: 郭
-// 更新日: 2025-11-17
+// 設計書ID: profile
+// 画面名: マイページ
+// 役割:
+//   - 登録情報の簡単な表示。
+//   - 「編集」「履歴」「設定」「利用規約」への導線を表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -26,8 +32,13 @@ fun ProfileScreen(
 ) {
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("マイページ") }
+            TopAppBar(
+                title = { Text("マイページ") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.Edit, contentDescription = "戻る")
+                    }
+                }
             )
         }
     ) { padding ->
@@ -36,32 +47,62 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            Text("ユーザー情報（ダミー）", style = MaterialTheme.typography.titleMedium)
+
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("名前：テストユーザー")
+                    Text("メール：test@example.com")
+                    Text("電話番号：090-xxxx-xxxx")
+                }
+            }
+
+            Divider()
+
+            // 編集
             Button(
                 onClick = onEdit,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("プロフィール編集") }
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("情報を編集する")
+            }
 
+            // 履歴
             Button(
                 onClick = onOrderHistory,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("注文履歴") }
+            ) {
+                Icon(Icons.Default.History, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("購入履歴を見る")
+            }
 
+            // 設定
             Button(
                 onClick = onSettings,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("設定") }
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("設定")
+            }
 
+            // 利用規約
             Button(
                 onClick = onTerms,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("利用規約") }
-
-            TextButton(onClick = onBack) {
-                Text("戻る")
+            ) {
+                Icon(Icons.Default.Description, contentDescription = null)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("利用規約")
             }
         }
     }

@@ -1,29 +1,27 @@
 // =========================================================
 // File: StoreMapExpandedScreen.kt
-// 設計書ID: store_map_expanded
-// 画面名: 店舗内マップ（拡大表示）
+// 設計書ID: store_拡大_map
+// 画面名: 店内マップ拡大画面
 // 役割:
-//   - 店舗内の平面図（剖面図）を拡大表示する画面。
-//   - 戻るボタンで前画面（店舗拡大画面）に戻る。
-//   - 「商品一覧へ」ボタンで menu 画面へ遷移。
-// 更新者: 郭
-// 更新日: 2025-11-18
+//   - 店舗の店内平面図（floorMapRes）を大きく表示する。
+//   - 将来的にエリア別のゾーン（A〜F）を重ねて表示する土台となる画面。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.compose.material.icons.Icons
+import com.example.supermarket.R
 import com.example.supermarket.data.StoreDataRepository
-import androidx.compose.ui.res.painterResource
-import androidx.compose.material.icons.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,11 +33,14 @@ fun StoreMapExpandedScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = { Text("店内マップ") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "戻る"
+                        )
                     }
                 }
             )
@@ -48,28 +49,29 @@ fun StoreMapExpandedScreen(
 
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(12.dp)
                 .fillMaxSize()
+                .padding(padding)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            store?.let { s ->
-                s.floorMapRes?.let { mapRes ->
-                    Image(
-                        painter = painterResource(id = mapRes),
-                        contentDescription = "map",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = store?.storeName ?: "店舗名不明",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-                Text("店舗名：${s.storeName}")
-                Text("住所：${s.address}")
-            } ?: run {
-                Text("店舗情報が見つかりません。")
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                Image(
+                    painter = painterResource(id = store?.floorMapRes ?: R.drawable.logo),
+                    contentDescription = "店内マップ",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
             }
         }
-    }}
+    }
+}

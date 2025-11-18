@@ -1,20 +1,19 @@
 // =========================================================
 // File: FindPasswordScreen.kt
-// 画面名: パスワード探し（メール入力画面）
+// 設計書ID: findpwd
+// 画面名: パスワード再設定（ID + メール入力）
 // 役割:
-//   - ユーザーIDとメールアドレスを入力し、次のパスワード再設定画面へ進む。
-//   - 「戻る」ボタンで前の画面へ戻る。
-// 更新者: 郭
-// 更新日: 2025-11-17
+//   - ユーザーIDとメールを入力し、本人確認として次の画面へ進む。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,17 +28,23 @@ fun FindPasswordScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("パスワードを探す") }
+            TopAppBar(
+                title = { Text("パスワード再設定") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
+                    }
+                }
             )
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             OutlinedTextField(
@@ -52,7 +57,7 @@ fun FindPasswordScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("メールアドレス") },
+                label = { Text("登録メールアドレス") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -60,24 +65,17 @@ fun FindPasswordScreen(
                 Text(errorMessage, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = {
                     if (userId.isBlank() || email.isBlank()) {
-                        errorMessage = "IDとメールアドレスを入力してください"
+                        errorMessage = "すべて入力してください。"
                     } else {
-                        errorMessage = ""
-                        onNext()       // 次へ（成功画面へ）
+                        onNext()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("次へ")
-            }
-
-            TextButton(onClick = onBack) {
-                Text("戻る")
             }
         }
     }

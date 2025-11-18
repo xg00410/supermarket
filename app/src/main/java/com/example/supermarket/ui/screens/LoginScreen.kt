@@ -1,81 +1,88 @@
 // =========================================================
-// ファイル名: LoginScreen.kt
-// 設計書ID: Login
+// File: LoginScreen.kt
+// 設計書ID: login
 // 画面名: ログイン画面
-// 役割: ユーザーIDとパスワードを入力し、認証を行う画面。
-//       「ログイン」「戻る」「パスワード忘れ」ボタンを持つ。
-// 更新者: 吴
-// 更新日: 2025-11-17
+// 役割:
+//   - ユーザーIDとパスワードを入力。
+//   - 「ログイン」ボタンでログイン成功画面へ遷移。
+//   - 「パスワードをお忘れの方」から FindPassword へ。
+//   - 「新規登録」から RegisterScreen へ。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit,
-    onForgotPassword: () -> Unit
+    navController: NavController
 ) {
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorText by remember { mutableStateOf<String?>(null) }
+
+    var errorMessage by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("ログイン") }
+            TopAppBar(
+                title = { Text("ログイン") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
+                    }
+                }
             )
         }
     ) { padding ->
+
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
                 label = { Text("ユーザーID") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("パスワード") },
-                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (errorText != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(errorText!!, color = MaterialTheme.colorScheme.error)
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
                     if (userId.isBlank() || password.isBlank()) {
-                        errorText = "ユーザーIDとパスワードを入力してください"
+                        errorMessage = "すべて入力してください。"
                     } else {
-                        errorText = null
-                        onLoginSuccess()
+                        // ※ 本来はAPI認証
+                        navController.navigate(Routes.LOGIN_SUCCESS)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -83,18 +90,16 @@ fun LoginScreen(
                 Text("ログイン")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ≫ パスワード忘れ
-            TextButton(onClick = onForgotPassword) {
+            TextButton(
+                onClick = { navController.navigate(Routes.FIND_PASSWORD) }
+            ) {
                 Text("パスワードをお忘れの方はこちら")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ≫ 新規登録へ
-            TextButton(onClick = onNavigateToRegister) {
-                Text("新規登録はこちら")
+            TextButton(
+                onClick = { navController.navigate(Routes.REGISTER) }
+            ) {
+                Text("新規登録")
             }
         }
     }

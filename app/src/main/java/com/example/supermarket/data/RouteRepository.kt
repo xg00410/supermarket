@@ -1,67 +1,98 @@
 // =========================================================
 // File: RouteRepository.kt
-// 概要: 店舗内ルート計算に必要なノード・エッジ情報を管理するデータリポジトリ。
-//設計書ID: なし（ロジック用ファイル）
-//画面名: 非UI（ルート計算ロジック）
+// 概要:
+//   - 店舗内ルート計算に必要な「エリア」の情報を管理する。
+//   - RouteScreen から利用され、エリアスライダーと店内マップの初期配置を提供する。
+// 設計書ID: route（ロジック部）
+// 画面名: 非UI（ルート計算ロジック）
+// 役割:
+//   - AreaNode（エリアID＋マップ上の中心座標）を定義。
+//   - カテゴリ名（飲料・食品など）に応じた初期位置を返す。
+// 備考:
+//   - 本実装では「カテゴリ名」をそのままエリアIDとして扱っている。
+//     将来「A〜F」などの専用エリアIDを導入する場合は、ここでマッピングを定義しなおす。
 // 更新者: 郭
-// 更新日: 2025-11-17
+// 更新日: 2025-11-18
 // =========================================================
 
 package com.example.supermarket.data
 
-import kotlin.math.pow
-import kotlin.math.sqrt
-
-// 模拟每个商品在商店平面图中的位置
-data class ProductPosition(
-    val productId: String,
-    val name: String,
-    val x: Double,
-    val y: Double
+/**
+ * AreaNode
+ * 店舗内の1つのエリア（ゾーン）を表す。
+ *
+ * @param id       エリアID（例: "飲料", "食品" など）
+ * @param centerX  店内マップ上のX座標（0.0〜1.0 の範囲で正規化）
+ * @param centerY  店内マップ上のY座標（0.0〜1.0 の範囲で正規化）
+ */
+data class AreaNode(
+    val id: String,
+    val centerX: Float,
+    val centerY: Float
 )
 
+/**
+ * RouteRepository
+ * ルート計算用のエリア情報を提供するオブジェクト。
+ */
 object RouteRepository {
-    // 假设商店是 10x10 的格子区域
-    private val productPositions = listOf(
-        ProductPosition("p001", "お〜いお茶 500ml", 1.0, 2.0),
-        ProductPosition("p002", "カップラーメン 醤油", 3.0, 5.0),
-        ProductPosition("p010", "コカ・コーラ 1.5L", 8.0, 1.0),
-        ProductPosition("p020", "チョコスナック", 9.0, 7.0),
-        ProductPosition("p030", "ポテトチップス うすしお", 4.0, 8.0)
+
+    // -----------------------------------------------------
+    // 既定のエリア配置
+    //   - key: カテゴリ名（= エリアIDとして使用）
+//   - value: AreaNode（店内マップ上の相対座標）
+// -----------------------------------------------------
+    private val predefinedAreas: Map<String, AreaNode> = mapOf(
+        "飲料" to AreaNode("飲料", centerX = 0.2f, centerY = 0.2f),
+        "食品" to AreaNode("食品", centerX = 0.5f, centerY = 0.2f),
+        "菓子" to AreaNode("菓子", centerX = 0.8f, centerY = 0.2f),
+        "調味料" to AreaNode("調味料", centerX = 0.2f, centerY = 0.5f),
+        "日用品" to AreaNode("日用品", centerX = 0.5f, centerY = 0.5f),
+        "冷蔵" to AreaNode("冷蔵", centerX = 0.8f, centerY = 0.5f),
+        "冷凍" to AreaNode("冷凍", centerX = 0.3f, centerY = 0.8f),
+        "その他" to AreaNode("その他", centerX = 0.7f, centerY = 0.8f)
     )
 
-    // 根据ID获取位置
-    fun getPositionById(productId: String): ProductPosition? {
-        return productPositions.find { it.productId == productId }
-    }
+    /**
+     * buildInitialAreaOrder
+     * カート内に登場するエリアIDの集合から、初期表示用のエリア順を作成する。
+     *
+     * @param areaIds  カート内で使用されているエリアIDの集合
+     * @return         初期順で並べた AreaNode のリスト
+     *
+     * ルール:
+     *   - 事前定義されているカテゴリ（飲料〜その他）は、predefinedAreasの並び順を尊重。
+     *   - 未定義のIDが来た場合は、適当な位置（左上から右下への対角線上）に自動配置。
+     */
+    fun buildInitialAreaOrder(areaIds: Set<String>): List<AreaNode> {
+        if (areaIds.isEmpty()) return emptyList()
 
-    // 根据商品名获取位置（CartItem → name）
-    fun getPositionByName(name: String): ProductPosition? {
-        return productPositions.find { it.name == name }
-    }
+        val result = mutableListOf<AreaNode>()
 
-    // 计算两点距离
-    private fun distance(a: ProductPosition, b: ProductPosition): Double {
-        return sqrt((a.x - b.x).pow(2) + (a.y - b.y).pow(2))
-    }
-
-    // 简易TSP算法：找出一条最短路径（根据商品名）
-    fun getShortestRouteByNames(names: List<String>): List<ProductPosition> {
-        val points = names.mapNotNull { getPositionByName(it) }.toMutableList()
-        if (points.isEmpty()) return emptyList()
-
-        val route = mutableListOf<ProductPosition>()
-        var current = points.first()
-        route.add(current)
-        points.remove(current)
-
-        while (points.isNotEmpty()) {
-            val next = points.minByOrNull { distance(current, it) }!!
-            route.add(next)
-            points.remove(next)
-            current = next
+        // 1. 既知のエリアを事前定義の順番で追加
+        val knownIdsInPredefinedOrder = predefinedAreas.keys.filter { areaIds.contains(it) }
+        knownIdsInPredefinedOrder.forEach { id ->
+            predefinedAreas[id]?.let { result.add(it) }
         }
 
-        return route
+        // 2. 未知のエリアIDに対して簡易的なレイアウトを割り当て
+        val unknownIds = areaIds - predefinedAreas.keys
+        if (unknownIds.isNotEmpty()) {
+            val step = 1f / (unknownIds.size + 1)
+            var index = 1
+            unknownIds.sorted().forEach { id ->
+                val pos = step * index
+                result.add(
+                    AreaNode(
+                        id = id,
+                        centerX = pos,
+                        centerY = pos
+                    )
+                )
+                index++
+            }
+        }
+
+        return result
     }
 }

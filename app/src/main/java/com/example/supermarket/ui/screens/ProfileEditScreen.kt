@@ -1,10 +1,10 @@
 // =========================================================
 // File: ProfileEditScreen.kt
-// 概要: プロフィール情報（名前・電話番号・メール等）を編集する画面。
-//設計書ID: なし（追加機能）
-//画面名: プロファイル編集画面
-// 更新者: 郭
-// 更新日: 2025-11-17
+// 設計書ID: profile_edit
+// 画面名: プロフィール編集画面
+// 役割:
+//   - ユーザー情報（名前・電話番号・メール）を編集する画面。
+//   - 実際の保存処理はダミー。UIフローを構築。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -16,33 +16,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileEditScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit
-)
-
- {
-
-    // -----------------------------------------------
-    // ★ 本来は DB / API から取得した値をセット
-    //   今は仮データ（後で PHP 連動可能）
-    // -----------------------------------------------
-    var userName by remember { mutableStateOf("山田 太郎") }
-    var email by remember { mutableStateOf("taro@example.com") }
-    var phone by remember { mutableStateOf("080-1234-5678") }
+) {
+    var name by remember { mutableStateOf("テストユーザー") }
+    var phone by remember { mutableStateOf("090-xxxx-xxxx") }
+    var email by remember { mutableStateOf("test@example.com") }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("情報編集") },
+            TopAppBar(
+                title = { Text("プロフィール編集") },
                 navigationIcon = {
-                    IconButton(onClick = {onBack()}) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
             )
@@ -53,26 +44,14 @@ fun ProfileEditScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // -----------------------------
-            // 入力項目
-            // -----------------------------
             OutlinedTextField(
-                value = userName,
-                onValueChange = { userName = it },
-                label = { Text("氏名") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("メールアドレス") },
-                singleLine = true,
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("名前") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -80,24 +59,21 @@ fun ProfileEditScreen(
                 value = phone,
                 onValueChange = { phone = it },
                 label = { Text("電話番号") },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("メールアドレス") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            // -----------------------------
-            // 保存ボタン
-            // -----------------------------
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
-                onClick = {
-                    // ★ 後で PHP API と連動して DB 更新
-                    onSaved()
-
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                onClick = onSaved,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存する")
             }

@@ -1,10 +1,10 @@
 // =========================================================
 // File: StoreRegionScreen.kt
-// 概要: 日本の地域区分を表示し、ユーザーがエリアを選択する画面。
-//設計書ID: なし（追加機能）
-//画面名: 地域選択画面
-// 更新者: 小林さん
-// 更新日: 2025-11-17
+// 設計書ID: store_region
+// 画面名: 都道府県別店舗一覧画面
+// 役割:
+//   - 受け取った都道府県名（prefecture）に基づいて店舗を絞り込み表示する。
+//   - 店舗をタップすると店舗拡大画面へ遷移する。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -17,37 +17,48 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
-import com.example.supermarket.models.Store
 import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreRegionScreen(navController: NavController) {
-
-    // ★ stores 表のすべての店舗
-    val stores = StoreDataRepository.getAllStores()
-
-    // ★ 都道府県一覧（住所の先頭3文字で抽出して distinct）
-    val prefectures = stores
-        .map { it.address.take(3) }
-        .distinct()
+fun StoreRegionScreen(
+    navController: NavController,
+    prefecture: String
+) {
+    val allStores = StoreDataRepository.getAllStores()
+    val storesInPrefecture = allStores.filter {
+        it.address.contains(prefecture)
+    }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("都道府県を選択") },
+            TopAppBar(
+                title = { Text("店舗一覧：$prefecture") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
             )
         }
     ) { padding ->
+
+        if (storesInPrefecture.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("この都道府県には登録店舗がありません。")
+            }
+            return@Scaffold
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -56,83 +67,25 @@ fun StoreRegionScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            items(prefectures) { prefecture ->
-
+            items(storesInPrefecture, key = { it.storeId }) { store ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            navController.navigate("${Routes.STORE_REGION}/$prefecture")
+                            navController.navigate("${Routes.STORE_DETAIL}/${store.storeId}")
                         }
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(prefecture, style = MaterialTheme.typography.titleMedium)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(store.storeName, style = MaterialTheme.typography.titleMedium)
+                        Text(store.address, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
-        }
-    }
-}
-
-/**
- * --------------------------------------------------------------------
- * 店舗一覧（都道府県を選んだ後の画面）
- * Route: STORE_REGION/{prefecture}
- * --------------------------------------------------------------------
- */
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StoreRegionDetailScreen(
-    navController: NavController,
-    prefecture: String
-) {
-
-    val stores = StoreDataRepository.getAllStores()
-        .filter { it.address.startsWith(prefecture) }
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("${prefecture} の店舗") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-
-            items(stores) { store ->
-                PrefectureStoreItem(store) {
-                    navController.navigate("${Routes.STORE_DETAIL}/${store.storeId}")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PrefectureStoreItem(store: Store, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(store.storeName, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(store.address, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -1,36 +1,30 @@
 // =========================================================
-// ファイル名: MenuScreen.kt
+// File: MenuScreen.kt
 // 設計書ID: menu
 // 画面名: 店舗画面（商品一覧）
 // 役割:
-//   - 左側にカテゴリ一覧を表示（8カテゴリ）
-//   - 右側にカテゴリ別の商品一覧を表示
-//   - 商品画像／名前／価格／在庫／数量選択（＋／－）
-//   - 「カートに追加」ボタン
-//   - 下部に「カートを見る」ボタン
-//   - 設計書のレイアウト構成に完全準拠
-//
-// 更新者: 郭
-// 更新日: 2025-11-17
+//   - 左側にカテゴリ一覧（8カテゴリ）を表示。
+//   - 右側にカテゴリ別の商品一覧を表示。
+//   - 商品画像／名前／価格／在庫／数量ボタン（＋／－）。
+//   - 画面下部に「カートを見る」ボタンを表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
-
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
-import com.example.supermarket.viewmodel.CartViewModel
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
-
+import com.example.supermarket.viewmodel.CartViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,14 +33,16 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
+    // 8カテゴリ（設計書に合わせて固定）
     val categories = listOf(
-        "飲料", "食品", "調味料", "菓子",
+        "飲料", "食品", "菓子", "調味料",
         "日用品", "冷蔵", "冷凍", "その他"
     )
 
     var selectedCategory by remember { mutableStateOf(categories.first()) }
 
-    val products = remember(selectedCategory) {
+    // 選択中カテゴリの商品一覧
+    val products = remember(selectedCategory, storeId) {
         StoreDataRepository.getProductsByStore(storeId).filter {
             it.category == selectedCategory
         }
@@ -58,7 +54,7 @@ fun MenuScreen(
                 title = { Text("商品一覧") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
             )
@@ -72,9 +68,9 @@ fun MenuScreen(
                 .fillMaxSize()
         ) {
 
-            // --- 分类标签 ---
+            // カテゴリタブ
             ScrollableTabRow(selectedTabIndex = categories.indexOf(selectedCategory)) {
-                categories.forEachIndexed { index, category ->
+                categories.forEach { category ->
                     Tab(
                         selected = selectedCategory == category,
                         onClick = { selectedCategory = category },
@@ -85,10 +81,10 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- 商品列表 ---
+            // 商品一覧（上部：スクロール領域）
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             ) {
                 items(products) { product ->
                     ProductCard(
@@ -96,6 +92,16 @@ fun MenuScreen(
                         cartViewModel = cartViewModel
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // カートへ
+            Button(
+                onClick = { navController.navigate(Routes.CART) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("カートを見る")
             }
         }
     }

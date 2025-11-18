@@ -1,8 +1,14 @@
 // =========================================================
 // File: StoreDetailScreen.kt
-// 店舗詳細画面（store_拡大）
-// 更新者: 郭（修正版）
-// 更新日: 2025-11-18
+// 設計書ID: store_拡大
+// 画面名: 店舗拡大画面
+// 役割:
+//   - 店舗の外観画像・名称・住所を表示する。
+//   - 「店舗内マップを見る」ボタンから店内平面図画面へ遷移。
+//   - 「商品一覧を見る」ボタンから menu 画面へ遷移。
+//   - 戻るボタンで一つ前の画面へ戻る。
+// 備考:
+//   - 画像は全店舗共通のダミー画像（logo）を使用。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -22,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.R
 import com.example.supermarket.data.StoreDataRepository
+import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +46,7 @@ fun StoreDetailScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "back"
+                            contentDescription = "戻る"
                         )
                     }
                 }
@@ -55,15 +62,14 @@ fun StoreDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 店舗外観（统一使用 logo 占位）
-            Box(
+            // 店舗外観画像（全店舗共通のダミー画像）
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
-                contentAlignment = Alignment.Center
+                    .height(180.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.logo),
+                    painter = painterResource(id = store?.imageRes ?: R.drawable.logo),
                     contentDescription = "店舗画像",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -82,25 +88,23 @@ fun StoreDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- ボタン群 ---
+            // ボタン群
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
                 // 店内マップへ
                 Button(
                     onClick = {
-                        navController.navigate("store_map_expanded/$storeId")
+                        navController.navigate("${Routes.STORE_MAP_EXPANDED}/$storeId")
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("店内マップを見る")
+                    Text("店舗内マップを見る")
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
 
                 // 商品一覧へ
                 Button(
                     onClick = {
-                        navController.navigate("menu/$storeId")
+                        navController.navigate("${Routes.MENU}/$storeId")
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

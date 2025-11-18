@@ -1,11 +1,9 @@
 // =========================================================
-// File: FindPasswordScreen.kt
-// 画面名: パスワード探し（メール入力画面）
+// File: HelpScreen.kt
+// 設計書ID: help
+// 画面名: ヘルプ画面
 // 役割:
-//   - ユーザーIDとメールアドレスを入力し、次のパスワード再設定画面へ進む。
-//   - 「戻る」ボタンで前の画面へ戻る。
-// 更新者: 郭
-// 更新日: 2025-11-17
+//   - アプリの使い方を簡単に説明する静的な画面。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -22,37 +20,39 @@ import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HelpScreen(navController: NavController) {
-
+fun HelpScreen(
+    navController: NavController
+) {
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            TopAppBar(
                 title = { Text("ヘルプ") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
             )
         }
     ) { padding ->
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.Start
+                .padding(16.dp),
+            contentAlignment = Alignment.TopStart
         ) {
-            Text(
-                "アプリの使い方：\n" +
-                        "・店舗を検索する\n" +
-                        "・商品を選択する\n" +
-                        "・カートから最短ルートへ進む\n" +
-                        "・マイページで情報を確認する",
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("このアプリの使い方", style = MaterialTheme.typography.titleMedium)
+                Text("1. ログインまたは新規登録を行います。")
+                Text("2. 店舗選択画面で行きたい店舗を選びます。")
+                Text("3. 商品一覧画面でカートに商品を追加します。")
+                Text("4. カート画面から最短ルートを確認できます。")
+                Text("5. 買い終わった商品はルート画面でチェックし、履歴として確認できます。")
+            }
         }
     }
 }
