@@ -1,13 +1,11 @@
 // =========================================================
 // File: MenuScreen.kt
-// 設計書ID: menu
 // 画面名: 店舗画面（商品一覧）
 // 役割:
-//   - 左側にカテゴリ一覧（8カテゴリ）を表示。
-//   - 右側にカテゴリ別の商品一覧を表示。
-//   - 商品画像／名前／価格／在庫／数量ボタン（＋／－）。
-//   - 画面下部に「カートを見る」ボタンを表示。
-//   - 画面上部に「店舗名」を表示して、どの店舗か区別できるようにする。
+//   - 店舗名を画面上部に表示
+//   - 左側にカテゴリ一覧、右側にカテゴリ別商品一覧
+//   - 「カートを見る」ボタン
+//   - 店舗ごとのカート合計を表示
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -23,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
+import com.example.supermarket.data.SelectedStoreState
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
@@ -34,18 +33,23 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
-    // 8カテゴリ（設計書に合わせて固定）
+    // ★ 表示中の店舗を記録（BottomNav 用）
+    LaunchedEffect(storeId) {
+        SelectedStoreState.currentStoreId = storeId
+    }
+
+    // ★ 店舗名を取得（StoreDataRepository から）
+    val store = remember(storeId) {
+        StoreDataRepository.getStoreById(storeId)
+    }
+    val storeName = store?.storeName ?: "店舗"
+
+    // 8カテゴリ
     val categories = listOf(
         "飲料", "食品", "菓子", "調味料",
         "日用品", "冷蔵", "冷凍", "その他"
     )
-
     var selectedCategory by remember { mutableStateOf(categories.first()) }
-
-    // 店舗情報（店舗名表示用）
-    val store = remember(storeId) {
-        StoreDataRepository.getStoreById(storeId)
-    }
 
     // 選択中カテゴリの商品一覧
     val products = remember(selectedCategory, storeId) {
@@ -54,12 +58,28 @@ fun MenuScreen(
         }
     }
 
+    // ★ カート合計（毎回計算 → リアルタイム更新のため）
+    val storeCartTotal = cartViewModel.cartItems
+        .filter { it.storeId == storeId }
+        .sumOf { it.price * it.quantity }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("商品一覧") },
+                title = { Text(storeName) }, // ★ 店舗名を表示
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            val prev = navController.previousBackStackEntry?.destination?.route
+                            if (prev == Routes.MAIN) {
+                                navController.navigate(Routes.STORE_SELECT) {
+                                    popUpTo(Routes.STORE_SELECT) { inclusive = false }
+                                }
+                            } else {
+                                navController.popBackStack()
+                            }
+                        }
+                    ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
@@ -74,15 +94,6 @@ fun MenuScreen(
                 .fillMaxSize()
         ) {
 
-            // 店舗名表示（画面上部）
-            store?.let {
-                Text(
-                    text = it.storeName,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
             // カテゴリタブ
             ScrollableTabRow(selectedTabIndex = categories.indexOf(selectedCategory)) {
                 categories.forEach { category ->
@@ -96,7 +107,7 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 商品一覧（上部：スクロール領域）
+            // 商品一覧
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
@@ -111,11 +122,7 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 現在の店舗のカート合計（参考表示）
-            val storeCartTotal = cartViewModel.cartItems
-                .filter { it.storeId == storeId }
-                .sumOf { it.price * it.quantity }
-
+            // 店舗カート合計
             Text(
                 text = "この店舗のカート合計：${storeCartTotal.toInt()} 円",
                 style = MaterialTheme.typography.titleMedium
@@ -125,7 +132,9 @@ fun MenuScreen(
 
             // カートへ
             Button(
-                onClick = { navController.navigate(Routes.CART) },
+                onClick = {
+                    navController.navigate(Routes.CART)
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("カートを見る")

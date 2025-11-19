@@ -3,35 +3,34 @@
 // 設計書ID: route
 // 画面名: 最短ルート画面
 // 役割:
-//   - カート内の商品をもとに、店舗内の巡回順（ルート）を確認する画面。
-//   - 上部: 店舗内マップ（簡易図）＋エリアのハイライト（A〜Fなど）
-//   - 中部: エリアスライダー（エリア順の並べ替え）
-//   - 下部: 商品一覧（エリアごとにグルーピング）＋「取得」チェックボックス
-//   - 戻る時: チェックONの商品を「取得済み」とみなし、カートから削除し履歴へ登録。
-// 更新者: 郭
-// 更新日: 2025-11-18
+//   - 店舗内の簡易マップ（擬似マップ）とルート表示。
+//   - 画面上部に店舗名＋店舗ID を表示して、どの店舗か分かるようにする。
+//   - 下部に「エリア（カテゴリ）スライダー」「商品スライダー」を横スクロールで表示。
+//   - 各商品カードには 商品名・数量・チェックボックス を縦方向に配置し，
+//     カード自体を横方向にスクロールして確認できるようにする。
+// 備考:
+//   - マップは Canvas を使ったシンプルな長方形＋ルート線の擬似図。
+//   - 実際の店内画像に差し替える場合は、このファイル内の Canvas 部分を修正する。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.data.RouteRepository
+import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.viewmodel.CartViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,35 +40,53 @@ fun RouteScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
-    // 対象店舗のカート内商品
-    val cartItems = cartViewModel.cartItems.filter { it.storeId == storeId }
-
-    // 使用されているエリアID一覧（A, B, C, ...）
-    val areaIds = remember(cartItems) {
-        cartItems.map { it.category } // ※カテゴリーではなく本来は area だが、簡易実装として category を流用する場合はここを調整
+    // 店舗情報（タイトル表示用）
+    val store = remember(storeId) {
+        StoreDataRepository.getStoreById(storeId)
     }
 
-    // ルート用エリア設定
-    val initialAreas = remember(areaIds) {
-        RouteRepository.buildInitialAreaOrder(areaIds.toSet())
+    // この店舗のカート内商品
+    val cartItemsForStore = cartViewModel.cartItems.filter { it.storeId == storeId }
+
+    // この店舗の商品マスタ（カテゴリを引くために使用）
+    val productsForStore = remember(storeId) {
+        StoreDataRepository.getProductsByStore(storeId)
     }
 
-    var areaOrder by remember { mutableStateOf(initialAreas) }
+    // カート内に実際に存在するカテゴリ一覧（重複除去）
+    val categoriesInCart: List<String> = remember(cartItemsForStore) {
+        cartItemsForStore.mapNotNull { item ->
+            productsForStore.find { it.productId == item.productId }?.category
+        }.distinct()
+    }
 
-    // 商品取得チェック状態（productId 単位）
-    val obtainedMap = remember { mutableStateMapOf<Int, Boolean>() }
+    var selectedCategory by remember(categoriesInCart) {
+        mutableStateOf(categoriesInCart.firstOrNull())
+    }
+
+    // 選択中カテゴリに属する「カート内の商品＋商品マスタ」のペア
+    val itemsForSelectedCategory = remember(selectedCategory, cartItemsForStore, productsForStore) {
+        if (selectedCategory == null) emptyList()
+        else {
+            cartItemsForStore.mapNotNull { item ->
+                val product = productsForStore.find { it.productId == item.productId }
+                if (product != null && product.category == selectedCategory) {
+                    item to product
+                } else null
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ルート案内") },
+                title = {
+                    Text(
+                        text = store?.let { "${it.storeName}（$storeId）" } ?: "ルート案内"
+                    )
+                },
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            // 戻るボタンでもナビ終了扱いとする
-                            finishRouteAndBack(navController, cartViewModel, obtainedMap)
-                        }
-                    ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 }
@@ -77,215 +94,187 @@ fun RouteScreen(
         }
     ) { padding ->
 
-        if (cartItems.isEmpty()) {
-            // 対象店舗のカートが空の場合
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("この店舗のカートに商品がありません。")
-            }
-            return@Scaffold
-        }
-
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
 
-            // -------------------------------------------------
-            // ① 店内マップ（簡易キャンバス）
-            // -------------------------------------------------
-            Card(
+            // 上：店舗内マップ（擬似）
+            Box(
                 modifier = Modifier
+                    .weight(0.65f)
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
+                Card(
+                    modifier = Modifier.fillMaxSize(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val w = size.width
+                        val h = size.height
 
-                    // エリアを順番に線で結ぶ
-                    for (i in 0 until areaOrder.size - 1) {
-                        val a = areaOrder[i]
-                        val b = areaOrder[i + 1]
-                        val start = Offset(a.centerX * w, a.centerY * h)
-                        val end = Offset(b.centerX * w, b.centerY * h)
+                        // 店内の長方形（通路）
+                        drawRect(
+                            color = Color(0xFFE0E0E0),
+                            topLeft = Offset(w * 0.05f, h * 0.05f),
+                            size = androidx.compose.ui.geometry.Size(w * 0.9f, h * 0.9f)
+                        )
+
+                        // 簡易的な棚（縦長の細い長方形をいくつか）
+                        for (i in 0..3) {
+                            val left = w * (0.12f + i * 0.2f)
+                            drawRect(
+                                color = Color(0xFFBDBDBD),
+                                topLeft = Offset(left, h * 0.1f),
+                                size = androidx.compose.ui.geometry.Size(w * 0.04f, h * 0.8f)
+                            )
+                        }
+
+                        // ルート線（スタート → ゴールのイメージ）
+                        val start = Offset(w * 0.1f, h * 0.9f)
+                        val mid = Offset(w * 0.5f, h * 0.5f)
+                        val end = Offset(w * 0.85f, h * 0.15f)
+
                         drawLine(
-                            color = androidx.compose.ui.graphics.Color.DarkGray,
+                            color = Color(0xFF1976D2),
                             start = start,
+                            end = mid,
+                            strokeWidth = 8f
+                        )
+                        drawLine(
+                            color = Color(0xFF1976D2),
+                            start = mid,
                             end = end,
-                            strokeWidth = 6f
+                            strokeWidth = 8f
                         )
-                    }
 
-                    // 各エリアを丸＋ラベルで表示
-                    areaOrder.forEach { area ->
-                        val center = Offset(area.centerX * w, area.centerY * h)
+                        // 現在地（青い丸）
                         drawCircle(
-                            color = androidx.compose.ui.graphics.Color.Black,
-                            radius = 14f,
-                            center = center
+                            color = Color(0xFF0D47A1),
+                            radius = 18f,
+                            center = start
                         )
-                        drawContext.canvas.nativeCanvas.apply {
-                            drawText(
-                                area.id,
-                                center.x,
-                                center.y - 20f,
-                                android.graphics.Paint().apply {
-                                    color = android.graphics.Color.BLACK
-                                    textAlign = android.graphics.Paint.Align.CENTER
-                                    textSize = 32f
-                                }
-                            )
-                        }
+
+                        // ゴール（赤い丸）
+                        drawCircle(
+                            color = Color(0xFFD32F2F),
+                            radius = 18f,
+                            center = end
+                        )
                     }
                 }
             }
 
-            // -------------------------------------------------
-            // ② エリアスライダー（エリア順の並べ替え）
-            // -------------------------------------------------
-            Text(
-                text = "エリア順（上のマップと連動）",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // 下：エリア＆商品スライダー
+            Column(
+                modifier = Modifier
+                    .weight(0.35f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                items(areaOrder.size) { index ->
-                    val area = areaOrder[index]
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+
+                // エリア（カテゴリ）スライダー：カートに存在するカテゴリだけ表示（A2）
+                if (categoriesInCart.isNotEmpty()) {
+                    Text(
+                        text = "エリア（カテゴリ）",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        IconButton(
-                            onClick = {
-                                if (index > 0) {
-                                    val list = areaOrder.toMutableList()
-                                    list.removeAt(index)
-                                    list.add(index - 1, area)
-                                    areaOrder = list
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.KeyboardArrowLeft,
-                                contentDescription = "左へ"
-                            )
-                        }
+                        items(categoriesInCart) { category ->
+                            val selected = category == selectedCategory
 
-                        AssistChip(
-                            onClick = { /* クリックでは何もしない */ },
-                            label = { Text(area.id) }
-                        )
-
-                        IconButton(
-                            onClick = {
-                                if (index < areaOrder.size - 1) {
-                                    val list = areaOrder.toMutableList()
-                                    list.removeAt(index)
-                                    list.add(index + 1, area)
-                                    areaOrder = list
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.KeyboardArrowRight,
-                                contentDescription = "右へ"
+                            FilterChip(
+                                selected = selected,
+                                onClick = { selectedCategory = category },
+                                label = { Text(category) }
                             )
                         }
                     }
                 }
-            }
 
-            // -------------------------------------------------
-            // ③ 商品一覧（エリア → 商品）
-            // -------------------------------------------------
-            Text(
-                text = "商品一覧（取得したものにチェック）",
-                style = MaterialTheme.typography.titleMedium
-            )
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // 簡易的にカテゴリ単位でグループ化（本来は area でグループ化）
-            val grouped = cartItems.groupBy { it.category }
+                // 商品スライダー（横スクロール，立て長カード）
+                Text(
+                    text = "商品",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Spacer(modifier = Modifier.height(4.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                grouped.forEach { (groupKey, itemsInGroup) ->
-                    item(key = "header_$groupKey") {
-                        Text(
-                            text = "エリア：$groupKey",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
+                if (itemsForSelectedCategory.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("該当する商品がありません。")
                     }
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(itemsForSelectedCategory, key = { it.first.productId }) { pair ->
+                            val cartItem = pair.first
+                            val product = pair.second
 
-                    items(itemsInGroup, key = { it.productId }) { item ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = obtainedMap[item.productId] ?: false,
-                                onCheckedChange = { checked ->
-                                    obtainedMap[item.productId] = checked
-                                }
-                            )
+                            // 各商品のチェック状態（画面内のみ保持）
+                            var checked by remember(cartItem.productId) { mutableStateOf(false) }
 
-                            Column(
-                                modifier = Modifier.weight(1f)
+                            Card(
+                                modifier = Modifier
+                                    .width(140.dp)
+                                    .height(140.dp)
                             ) {
-                                Text(item.name, style = MaterialTheme.typography.bodyLarge)
-                                Text("数量：${item.quantity}")
-                                Text("価格：${item.price} 円")
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(8.dp),
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = product.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 2
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "数量：${cartItem.quantity}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "取得済み",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { checked = it }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-
-            // -------------------------------------------------
-            // ④ ナビ終了ボタン
-            // -------------------------------------------------
-            Button(
-                onClick = {
-                    finishRouteAndBack(navController, cartViewModel, obtainedMap)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("ナビ終了（取得済みを履歴に登録）")
             }
         }
     }
-}
-
-/**
- * ルート終了時の処理:
- *  - チェックONの商品IDを取得
- *  - カートから削除（consumeItems）
- *  - 取得済み商品で履歴を1件登録（registerOrder）
- *  - カート画面に戻る
- */
-private fun finishRouteAndBack(
-    navController: NavController,
-    cartViewModel: CartViewModel,
-    obtainedMap: Map<Int, Boolean>
-) {
-    val obtainedIds = obtainedMap.filterValues { it }.keys.toList()
-    val obtainedItems = cartViewModel.consumeItems(obtainedIds)
-    cartViewModel.registerOrder(obtainedItems)
-
-    // カート画面へ戻る
-    navController.popBackStack()
 }

@@ -6,10 +6,11 @@
 //   - カート内商品の数量変更（＋／－）。
 //   - 削除ボタン（ゴミ箱）。
 //   - 合計金額の表示。
-//   - 「最短ルートへ」ボタンから route 画面へ遷移。
-//   - 戻るボタンで店舗選択画面へ戻る。
 //   - 店舗ごとに商品をグループ化して表示。
 //   - 各商品の在庫数を表示（ゴミ箱ボタンの左側）。
+//   - 各店舗ブロックの下に「最短ルートへ」ボタンを配置し，
+//     その店舗のルート画面へ直接遷移する。
+//   - 画面下部の「どの店舗か分からない」全体用ルートボタンは削除。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -98,10 +99,11 @@ fun CartScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     groupedByStore.forEach { (storeKey, itemsInStore) ->
+                        val storeId = storeKey.first
                         val storeName = storeKey.second
 
                         // 店舗名ヘッダー
-                        item(key = "header_${storeKey.first}") {
+                        item(key = "header_${storeId}") {
                             Text(
                                 text = storeName,
                                 style = MaterialTheme.typography.titleMedium
@@ -129,9 +131,11 @@ fun CartScreen(
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // 左：画像（全商品共通のダミー画像）
+                                    // 左：画像（商品に画像があればそれを使用，なければロゴ）
                                     Image(
-                                        painter = painterResource(id = item.imageRes ?: R.drawable.logo),
+                                        painter = painterResource(
+                                            id = item.imageRes ?: R.drawable.logo
+                                        ),
                                         contentDescription = "商品画像",
                                         modifier = Modifier
                                             .size(64.dp)
@@ -211,8 +215,17 @@ fun CartScreen(
                             }
                         }
 
-                        // 店舗ごとの区切り
-                        item(key = "divider_${storeKey.first}") {
+                        // 店舗ごとの「最短ルートへ」ボタン
+                        item(key = "route_${storeId}") {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Button(
+                                onClick = {
+                                    navController.navigate("${Routes.ROUTE}/$storeId")
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("最短ルートへ")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                             Divider()
                             Spacer(modifier = Modifier.height(8.dp))
@@ -223,29 +236,14 @@ fun CartScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 合計金額
+            // 合計金額（全店舗合計）
             val sum = cartViewModel.totalPrice()
             Text(
                 text = "合計：${sum.toInt()} 円",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 最短ルートへ
-            val canNavigateRoute = cartItems.isNotEmpty()
-            Button(
-                onClick = {
-                    if (canNavigateRoute) {
-                        val storeId = cartItems.first().storeId
-                        navController.navigate("${Routes.ROUTE}/$storeId")
-                    }
-                },
-                enabled = canNavigateRoute,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("最短ルートへ")
-            }
+            // ※ 画面下部の「最短ルートへ」ボタンは削除。
         }
     }
 }
