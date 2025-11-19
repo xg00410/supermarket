@@ -1,17 +1,19 @@
 // =========================================================
 // File: SelectedStoreState.kt
 // 役割:
-//   - 「直近でユーザーが見ていた店舗」の storeId を保持する簡易な状態ホルダー。
-//   - BottomNavBar（店舗タブ）などから参照して、
-//     その店舗の Menu 画面を開くために利用する。
-// 備考:
-//   - 本来は ViewModel や DataStore 等で管理すべきだが、
-//     現段階では最小限の改修に留めるため、単純なオブジェクトで実装する。
+//   - アプリ全体で「現在選択中の店舗ID」を共有するシンプルな状態ホルダー。
+//   - 本来は ViewModel などで管理するのが理想だが、卒業制作では
+//     構成をシンプルにするため object で実装している。
 // =========================================================
 
 package com.example.supermarket.data
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 object SelectedStoreState {
-    // デフォルトは新宿店（S001）
-    var currentStoreId: String = "S001"
+    // デフォルト店舗: 新宿店 (S001)
+    // アプリ起動直後や、まだ店舗を選択していない場合に使う。
+    var currentStoreId by mutableStateOf("S001")
 }

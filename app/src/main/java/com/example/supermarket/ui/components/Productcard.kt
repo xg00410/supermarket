@@ -8,108 +8,122 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.supermarket.models.Product
-import com.example.supermarket.viewmodel.CartViewModel
 import com.example.supermarket.R
+import com.example.supermarket.models.Product
 
+// =========================================================
+// File: ProductCard.kt
+// 役割:
+//   - 商品１件分の表示カード。
+//   - 画像／商品名／価格／在庫数／数量（－ 数量 ＋）を表示。
+//   - 「数量の状態」は呼び出し側(MenuScreen)から受け取り、
+//     onQuantityChange コールバックで親に返すだけにする。
+//   - カートへの追加ロジックは一切ここでは行わない。
+// =========================================================
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCard(
     product: Product,
-    cartViewModel: CartViewModel,
-    modifier: Modifier = Modifier
+    quantity: Int,
+    onQuantityChange: (Int) -> Unit
 ) {
-    var quantity by remember { mutableStateOf(0) }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        tonalElevation = 2.dp
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            // --- 左: 商品图片 ---
+            // 左: 画像
             Image(
-                painter = painterResource(
-                    id = product.imageRes ?: R.drawable.logo   // 全部图片不存在时用 logo
-                ),
+                painter = painterResource(id = product.imageRes),
                 contentDescription = product.name,
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                    .size(64.dp)
+                    .padding(end = 8.dp)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // --- 中央文字信息 ---
+            // 中央: 商品情報
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = product.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "¥${product.price}",
+                    text = "カテゴリ：${product.category}",
                     style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "価格：${product.price.toInt()} 円",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "在庫：${product.stock} 個",
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
-            // --- 右侧：库存 + 数量调整按钮 ---
+            // 右: 数量コントロール
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-
-                Text(
-                    text = "在庫：${product.stock}",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text("数量", style = MaterialTheme.typography.bodySmall)
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-
-                    // 减
+                    // － ボタン
                     IconButton(
                         onClick = {
-                            if (quantity > 0) {
-                                quantity--
-                                cartViewModel.removeFromCart(product)
-                            }
+                            val newValue = (quantity - 1).coerceAtLeast(0)
+                            onQuantityChange(newValue)
                         }
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = "减少")
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "減らす"
+                        )
                     }
 
                     Text(
                         text = quantity.toString(),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.bodyLarge
                     )
 
-                    // 加
+                    // ＋ ボタン
                     IconButton(
                         onClick = {
-                            quantity++
-                            cartViewModel.addToCart(product)
+                            val newValue = quantity + 1
+                            // 在庫チェックは MenuScreen 側でまとめて行うので
+                            // ここでは単純に +1 するだけにする
+                            onQuantityChange(newValue)
                         }
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "增加")
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "増やす"
+                        )
                     }
                 }
             }

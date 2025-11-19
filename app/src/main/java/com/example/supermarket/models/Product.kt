@@ -42,5 +42,5 @@ data class Product(
     val stock: Int,
 
     @DrawableRes
-    val imageRes: Int?       // 本地图片资源ID
+    val imageRes: Int       // 本地图片资源ID
 )

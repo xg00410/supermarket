@@ -1,13 +1,10 @@
 // =========================================================
 // File: AppNavHost.kt
-// アプリ全体のナビゲーション制御
-// 設計書ID: なし（ナビゲーション）
-// 役割:
-//   - 画面ID（Routes）に基づいて各画面を NavHost に登録する。
-//   - Login → Main → 店舗選択 → Menu → カート → Route → 履歴
-//     という一連の導線をここで定義する。
-// 更新者: 郭
-// 更新日: 2025-11-18
+// 说明：应用整体导航控制（中文修正版）
+// 核心修复：
+//   1. 记住用户“当前选中的店铺”
+//   2. BottomNav 进入菜单时不再固定为 S001
+//   3. 所有进入菜单的路径都同步更新 SelectedStoreState
 // =========================================================
 
 package com.example.supermarket.ui.theme
@@ -25,14 +22,8 @@ import com.example.supermarket.ui.screens.successscreen.LoginSuccessScreen
 import com.example.supermarket.ui.screens.successscreen.PasswordResetSuccessScreen
 import com.example.supermarket.ui.screens.successscreen.RegisterSuccessScreen
 import com.example.supermarket.viewmodel.CartViewModel
+import com.example.supermarket.data.SelectedStoreState   // ★ 新增：记录当前店铺
 
-/**
- * アプリ全体の画面遷移を管理する NavHost。
- *
- * @param navController  画面遷移を行う NavHostController
- * @param cartViewModel  カート・履歴を共有する ViewModel
- * @param modifier       親の Scaffold から渡される余白など
- */
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -46,15 +37,10 @@ fun AppNavHost(
     ) {
 
         // ------------------------
-        // メイン・認証系
+        // 起始 / 登录注册
         // ------------------------
-        composable(Routes.MAIN) {
-            MainScreen(navController)
-        }
-
-        composable(Routes.LOGIN) {
-            LoginScreen(navController = navController)
-        }
+        composable(Routes.MAIN) { MainScreen(navController) }
+        composable(Routes.LOGIN) { LoginScreen(navController) }
 
         composable(Routes.LOGIN_SUCCESS) {
             LoginSuccessScreen(
@@ -100,21 +86,13 @@ fun AppNavHost(
         }
 
         // ------------------------
-        // 店舗選択・位置情報
+        // 店铺选择 3 层级
         // ------------------------
-        composable(Routes.STORE_SELECT) {
-            StoreSelectScreen(navController)
-        }
+        composable(Routes.STORE_SELECT) { StoreSelectScreen(navController) }
+        composable(Routes.GPS_PERMISSION) { GpsPermissionScreen(navController) }
+        composable(Routes.STORE_MAP) { StoreMapScreen(navController) }
 
-        composable(Routes.GPS_PERMISSION) {
-            GpsPermissionScreen(navController)
-        }
-
-        composable(Routes.STORE_MAP) {
-            StoreMapScreen(navController)
-        }
-
-        // 第二層：地域 → 都道府県
+        // 第二层：区域 → 都道府县
         composable(
             route = Routes.STORE_PREFECTURE + "/{regionId}"
         ) { backStack ->
@@ -122,7 +100,7 @@ fun AppNavHost(
             StorePrefectureScreen(navController, regionId)
         }
 
-        // 第三層：都道府県 or キーワード → 店舗一覧
+        // 第三层：检索结果（关键词 or 都道府县）
         composable(
             route = Routes.STORE_RESULT + "/keyword={keyword}/pref={pref}"
         ) { backStack ->
@@ -131,97 +109,86 @@ fun AppNavHost(
             StoreResultScreen(navController, keyword, pref)
         }
 
-        // 店舗詳細
+        // 店铺详情
         composable(
             route = "${Routes.STORE_DETAIL}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })
         ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
-            StoreDetailScreen(
-                navController = navController,
-                storeId = storeId
-            )
+
+            // ★ 进入店铺详情时记录店铺
+            SelectedStoreState.currentStoreId = storeId
+
+            StoreDetailScreen(navController, storeId)
         }
 
-        // 既存：都道府県→店舗一覧（旧仕様 store_region）
+        // 旧版本 store_region（你若不用可以不打开）
         composable(
             route = "${Routes.STORE_REGION}/{prefecture}",
             arguments = listOf(navArgument("prefecture") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val prefecture = backStackEntry.arguments?.getString("prefecture") ?: ""
-            StoreRegionScreen(
-                navController = navController,
-                prefecture = prefecture
-            )
+        ) {
+            StoreRegionScreen(navController, it.arguments?.getString("prefecture") ?: "")
         }
 
-        // 店舗内マップ拡大
+        // 店铺地图（扩展）
         composable(
             route = "${Routes.STORE_MAP_EXPANDED}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val storeId = backStackEntry.arguments?.getString("storeId") ?: ""
-            StoreMapExpandedScreen(
-                navController = navController,
-                storeId = storeId
-            )
+        ) {
+            StoreMapExpandedScreen(navController, it.arguments?.getString("storeId") ?: "")
         }
 
         // ------------------------
-        // 商品一覧・カート
+        // 商品菜单（最重要）
         // ------------------------
+
+        // ① MENU（无参数）→ 用“最近选的店”
         composable(Routes.MENU) {
-            // デフォルト店舗（仮に S001 とする）
+            val current = SelectedStoreState.currentStoreId
             MenuScreen(
                 navController = navController,
                 cartViewModel = cartViewModel,
-                storeId = "S001"
+                storeId = current
             )
         }
 
+        // ② MENU/{storeId} → 更新当前店铺
         composable(
             route = "${Routes.MENU}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })
         ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId") ?: "S001"
-            MenuScreen(
-                navController = navController,
-                cartViewModel = cartViewModel,
-                storeId = storeId
-            )
-        }
 
-        composable(Routes.CART) {
-            CartScreen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
-        }
+            // ★ 记录用户当前选择的店铺
+            SelectedStoreState.currentStoreId = storeId
 
-        composable(Routes.CART_MANAGE) {
-            List2Screen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
+            MenuScreen(navController, cartViewModel, storeId)
         }
 
         // ------------------------
-        // 最短ルート
+        // 购物车
+        // ------------------------
+        composable(Routes.CART) {
+            CartScreen(navController, cartViewModel)
+        }
+
+        composable(Routes.CART_MANAGE) {
+            List2Screen(navController, cartViewModel)
+        }
+
+        // ------------------------
+        // 最短路径（传入 storeId）
         // ------------------------
         composable(
             route = "${Routes.ROUTE}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })
         ) { backStackEntry ->
             val storeId = backStackEntry.arguments?.getString("storeId") ?: "S001"
-            RouteScreen(
-                navController = navController,
-                cartViewModel = cartViewModel,
-                storeId = storeId
-            )
+            RouteScreen(navController, cartViewModel, storeId)
         }
 
         // ------------------------
-        // マイページ・履歴・設定
+        // 我的页面 / 设置 / 历史
         // ------------------------
         composable(Routes.PROFILE) {
             ProfileScreen(
@@ -240,30 +207,13 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Routes.TERMS) {
-            TermsScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Routes.ORDER_HISTORY) {
-            OrderHistoryScreen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
-        }
+        composable(Routes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.TERMS) { TermsScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.ORDER_HISTORY) { OrderHistoryScreen(navController, cartViewModel) }
 
         // ------------------------
-        // ヘルプ
+        // 帮助
         // ------------------------
-        composable(Routes.HELP) {
-            HelpScreen(navController)
-        }
+        composable(Routes.HELP) { HelpScreen(navController) }
     }
 }
