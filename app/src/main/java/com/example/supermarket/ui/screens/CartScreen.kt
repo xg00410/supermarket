@@ -7,9 +7,9 @@
 //   - 削除ボタン（ゴミ箱）。
 //   - 合計金額の表示。
 //   - 「最短ルートへ」ボタンから route 画面へ遷移。
-//   - 戻るボタンで店舗商品一覧へ戻る。
-// 備考:
-//   - 行レイアウトを調整：左に画像、中央に商品情報、右に数量（－ 数量 ＋）。
+//   - 戻るボタンで店舗選択画面へ戻る。
+//   - 店舗ごとに商品をグループ化して表示。
+//   - 各商品の在庫数を表示（ゴミ箱ボタンの左側）。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -30,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.R
+import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.viewmodel.CartViewModel
 
@@ -46,7 +48,14 @@ fun CartScreen(
             TopAppBar(
                 title = { Text("カート") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            // 戻る → 店舗選択画面へ
+                            navController.navigate(Routes.STORE_SELECT) {
+                                popUpTo(Routes.STORE_SELECT) { inclusive = false }
+                            }
+                        }
+                    ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
                     }
                 },
@@ -78,94 +87,135 @@ fun CartScreen(
                 }
             } else {
 
+                // 店舗ごとにグループ化
+                val groupedByStore = remember(cartItems) {
+                    cartItems.groupBy { it.storeId to it.storeName }
+                }
+
                 // 商品一覧
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(cartItems, key = { it.productId }) { item ->
+                    groupedByStore.forEach { (storeKey, itemsInStore) ->
+                        val storeName = storeKey.second
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        // 店舗名ヘッダー
+                        item(key = "header_${storeKey.first}") {
+                            Text(
+                                text = storeName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        // 店舗ごとの商品行
+                        items(itemsInStore, key = { it.productId }) { item ->
+
+                            // 在庫数を Product から取得
+                            val stock = remember(item.storeId, item.productId) {
+                                StoreDataRepository
+                                    .getProductsByStore(item.storeId)
+                                    .find { it.productId == item.productId }
+                                    ?.stock ?: 0
+                            }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                // 左：画像（全商品共通のダミー画像）
-                                Image(
-                                    painter = painterResource(id = R.drawable.logo),
-                                    contentDescription = "商品画像",
+                                Row(
                                     modifier = Modifier
-                                        .size(64.dp)
-                                        .padding(end = 8.dp),
-                                    contentScale = ContentScale.Crop
-                                )
-
-                                // 中央：商品情報
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(end = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.bodyLarge
+                                    // 左：画像（全商品共通のダミー画像）
+                                    Image(
+                                        painter = painterResource(id = item.imageRes ?: R.drawable.logo),
+                                        contentDescription = "商品画像",
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .padding(end = 8.dp),
+                                        contentScale = ContentScale.Crop
                                     )
-                                    Text("単価：${item.price.toInt()} 円")
-                                    Text("小計：${(item.price * item.quantity).toInt()} 円")
-                                }
 
-                                // 右：数量コントロール ＋ 削除ボタン
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    // 数量（－ 数量 ＋）
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    // 中央：商品情報
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
                                     ) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                cartViewModel.decreaseQuantity(item.productId)
-                                            },
-                                            contentPadding = PaddingValues(horizontal = 8.dp)
-                                        ) {
-                                            Text("－")
-                                        }
-
                                         Text(
-                                            text = item.quantity.toString(),
+                                            text = item.name,
                                             style = MaterialTheme.typography.bodyLarge
                                         )
-
-                                        OutlinedButton(
-                                            onClick = {
-                                                cartViewModel.increaseQuantity(item.productId)
-                                            },
-                                            contentPadding = PaddingValues(horizontal = 8.dp)
-                                        ) {
-                                            Text("＋")
-                                        }
+                                        Text("単価：${item.price.toInt()} 円")
+                                        Text("小計：${(item.price * item.quantity).toInt()} 円")
                                     }
 
-                                    // 削除ボタン
-                                    IconButton(
-                                        onClick = {
-                                            cartViewModel.removeItem(item.productId)
-                                        }
+                                    // 右：数量コントロール ＋ 在庫 ＋ 削除ボタン
+                                    Column(
+                                        horizontalAlignment = Alignment.End,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "削除"
-                                        )
+                                        // 数量（－ 数量 ＋）
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    cartViewModel.decreaseQuantity(item.productId)
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 8.dp)
+                                            ) {
+                                                Text("－")
+                                            }
+
+                                            Text(
+                                                text = item.quantity.toString(),
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    cartViewModel.increaseQuantity(item.productId)
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 8.dp)
+                                            ) {
+                                                Text("＋")
+                                            }
+                                        }
+
+                                        // 在庫表示＋削除ボタン（在庫が左、ゴミ箱が右）
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text("在庫：$stock")
+
+                                            IconButton(
+                                                onClick = {
+                                                    cartViewModel.removeItem(item.productId)
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "削除"
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
+                        }
+
+                        // 店舗ごとの区切り
+                        item(key = "divider_${storeKey.first}") {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Divider()
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }

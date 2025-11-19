@@ -17,10 +17,9 @@ package com.example.supermarket.data
 import com.example.supermarket.R
 import com.example.supermarket.models.Product
 import com.example.supermarket.models.Store
-import kotlin.random.Random
 import com.example.supermarket.models.Prefecture
-import com.example.supermarket.models.Region   // 现在先不用也没关系，给以后预留
-
+import com.example.supermarket.models.Region
+import kotlin.random.Random
 
 /**
  * StoreDataRepository
@@ -62,10 +61,21 @@ object StoreDataRepository {
     )
 
     // -----------------------------------------------------
+    // 店舗ID → 都道府県ID の簡易マッピング
+    //   - 千葉県（ID=12）はあえて紐づけず、「店舗なし」の例として扱う。
+    //   - 関東(regionId=3)内では、埼玉(11)・東京(13)・神奈川(14)のみ店舗あり。
+    // -----------------------------------------------------
+    private val storePrefectureMap: Map<String, Int> = mapOf(
+        "S001" to 13, // 東京都
+        "S002" to 14, // 神奈川県
+        "S003" to 11  // 埼玉県（住所は仮のまま）
+    )
+
+    // -----------------------------------------------------
     // 商品テンプレート定義（100件）
     //   - 各テンプレートは「商品名・カテゴリ・価格」のみを持つ。
-//   - 実際の Product 生成時に、店舗ごとの storeId / storeName / stock / imageRes を付与。
-// -----------------------------------------------------
+    //   - 実際の Product 生成時に、店舗ごとの storeId / storeName / stock / imageRes を付与。
+    // -----------------------------------------------------
     private data class ProductTemplate(
         val templateId: Int,
         val name: String,
@@ -88,7 +98,7 @@ object StoreDataRepository {
 
         categories.forEach { category ->
             // 各カテゴリにつき 12〜13品程度を作るイメージ
-            repeat(13) { idx ->
+            repeat(13) {
                 if (id > 100) return@forEach
                 list.add(
                     ProductTemplate(
@@ -109,9 +119,9 @@ object StoreDataRepository {
     // -----------------------------------------------------
     // 店舗ごとの商品リスト生成
     //   - 各店舗ごとに 30〜80 件のテンプレートをランダム選択。
-//   - 在庫数を 5〜100 の範囲でランダム付与。
-//   - productId は「店舗ごとに一意」かつ「全体でも一意」になるように採番。
-// -----------------------------------------------------
+    //   - 在庫数を 5〜100 の範囲でランダム付与。
+    //   - productId は「店舗インデックス×1000 + テンプレートID」。
+    // -----------------------------------------------------
     private val internalAllProducts: List<Product> = buildStoreProducts()
 
     private fun buildStoreProducts(): List<Product> {
@@ -151,7 +161,7 @@ object StoreDataRepository {
     }
 
     // -----------------------------------------------------
-    // 公開 API
+    // 公開 API（店舗・商品）
     // -----------------------------------------------------
 
     /**
@@ -176,10 +186,8 @@ object StoreDataRepository {
      */
     fun getAllProducts(): List<Product> = internalAllProducts
 
-
-
     // =========================================================
-    //  ここから下は 「店舗選択3層構造」用の追加コード
+    //  店舗選択3層構造 用の API ＋ マスタ
     // =========================================================
 
     /**
@@ -190,15 +198,29 @@ object StoreDataRepository {
         prefectures.filter { it.regionId == regionId }
 
     /**
+     * 地域ID から、「店舗が存在する都道府県だけ」を取得する。
+     * 例:
+     *   - 関東(regionId=3) の中でも、千葉県(prefectureId=12) に店舗が無い場合は返さない。
+     */
+    fun getPrefecturesWithStores(regionId: Int): List<Prefecture> {
+        // 該当地域の全都道府県
+        val regionPrefs = prefectures.filter { it.regionId == regionId }
+        // 少なくとも1件でも店舗が存在する都道府県だけを返す
+        return regionPrefs.filter { pref ->
+            stores.any { store ->
+                storePrefectureMap[store.storeId] == pref.prefectureId
+            }
+        }
+    }
+
+    /**
      * 都道府県ID から、その都道府県に属する店舗一覧を取得する。
-     * 現段階では簡易実装として「全店舗」を返している。
-     * TODO:
-     *   将来的には storeId と prefectureId を紐づけて、
-     *   本当にその都道府県内の店舗だけを返すようにする。
+     * storePrefectureMap に基づいて、該当する店舗のみを返す。
      */
     fun getStoresByPrefecture(prefectureId: Int): List<Store> {
-        // 今はとりあえず「全部の店舗」を返す
-        return stores
+        return stores.filter { store ->
+            storePrefectureMap[store.storeId] == prefectureId
+        }
     }
 
     /**
@@ -276,5 +298,4 @@ object StoreDataRepository {
         Prefecture(46, 8, "鹿児島県"),
         Prefecture(47, 8, "沖縄県")
     )
-
 }
