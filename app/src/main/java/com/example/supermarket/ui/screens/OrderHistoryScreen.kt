@@ -1,15 +1,5 @@
 // =========================================================
 // File: OrderHistoryScreen.kt
-// 設計書ID: order_history
-// 画面名: 履歴一覧画面
-// 役割:
-//   - 過去の購入履歴を、日付 → 店舗 → 商品の順に一覧表示する。
-//   - 日付単位でセクション見出しを表示（新しい日付から順に並べる）。
-//   - 同じ日の中では、注文時刻の新しい順に店舗ブロックを並べる。
-//   - 日付行をタップして、その日の履歴を折りたたみ／展開できるようにする。
-//   - 戻るボタンで前の画面に戻る（マイページまたはボトムナビの呼び出し元）。
-// 更新者: 郭
-// 更新日: 2025-11-19
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -43,7 +33,7 @@ fun OrderHistoryScreen(
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    // 日付ごとの折りたたみ状態（デフォルト = 展開）
+    // 各日付の展開状態
     val expandedStates = remember { mutableStateMapOf<LocalDate, Boolean>() }
 
     Scaffold(
@@ -71,9 +61,9 @@ fun OrderHistoryScreen(
             return@Scaffold
         }
 
-        // 日付（LocalDate）ごとにグルーピングし、新しい日付順に並べる
-        val groupedByDate = history.groupBy { it.orderedAt.toLocalDate() }
-            .toSortedMap(compareByDescending { it })
+        val groupedByDate =
+            history.groupBy { it.orderedAt.toLocalDate() }
+                .toSortedMap(compareByDescending { it })
 
         LazyColumn(
             modifier = Modifier
@@ -82,12 +72,13 @@ fun OrderHistoryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             groupedByDate.forEach { (date, ordersInDate) ->
 
                 val expanded = expandedStates[date] ?: true
 
-                // ---- 日付セクションヘッダ（タップで開閉） ----
-                item(key = "date_${date}") {
+                // ------------ 日付ヘッダ ------------
+                item("date_$date") {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -104,16 +95,17 @@ fun OrderHistoryScreen(
                         )
                         Icon(
                             imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (expanded) "閉じる" else "開く"
+                            contentDescription = null
                         )
                     }
                     Divider()
                 }
 
                 if (expanded) {
-                    // ---- 同一日付内の店舗ごとの注文 ----
                     val sortedOrders = ordersInDate.sortedByDescending { it.orderedAt }
+
                     items(sortedOrders, key = { it.orderId }) { order ->
+
                         Card(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -123,36 +115,28 @@ fun OrderHistoryScreen(
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // 店舗名＋時刻
+
+                                // 店铺名＋时刻
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = order.storeName,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = order.orderedAt.format(timeFormatter),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    Text(order.storeName, style = MaterialTheme.typography.titleMedium)
+                                    Text(order.orderedAt.format(timeFormatter))
                                 }
 
                                 Divider()
 
-                                // 商品一覧
+                                // 商品列表
                                 order.items.forEach { item ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Column(
-                                            modifier = Modifier.weight(1f)
-                                        ) {
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(item.name)
                                             Text("数量：${item.quantity}")
                                         }

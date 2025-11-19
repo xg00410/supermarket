@@ -3,12 +3,12 @@
 // 設計書ID: menu
 // 画面名: 店舗画面（商品一覧）
 // 役割:
-//   - 左側にカテゴリ一覧（8カテゴリ）を表示。
+//   - 上部に「店舗名」を表示。
+//   - 左側にカテゴリタブ（8カテゴリ固定）。
 //   - 右側にカテゴリ別の商品一覧を表示。
-//   - 商品画像／名前／価格／在庫／数量ボタン（＋／－）。
-//   - 画面下部に「カートに入れる」「最短ルートへ」ボタンを表示。
-//   - 店舗ごとのカート合計金額を下部に表示。
-//   - 店舗名を画面上部に表示して、どの店舗か分かるようにする。
+//   - 商品ごとに「一時選択数量」を保持（tempQuantities）。
+//   - 下部に「カートに入れる」「最短ルートへ」ボタン。
+//   - 在庫を超える数量が選択されている場合はダイアログで確認。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -20,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -28,9 +30,10 @@ import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
 
+// 商品確定時の動作種別
 private enum class MenuCommitAction {
-    ADD_TO_CART,
-    GO_ROUTE
+    ADD_TO_CART,     // カートに入れる
+    GO_ROUTE         // 最短ルートへ
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +43,17 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
-    // 8カテゴリ（設計書に合わせて固定）
+    // 店舗情報（店名表示用）
+    val store = remember(storeId) {
+        StoreDataRepository.getStoreById(storeId)
+    }
+
+    // この店舗の全商品
+    val allProducts = remember(storeId) {
+        StoreDataRepository.getProductsByStore(storeId)
+    }
+
+    // 8カテゴリ（設計書固定）
     val categories = listOf(
         "飲料", "食品", "菓子", "調味料",
         "日用品", "冷蔵", "冷凍", "その他"
@@ -48,65 +61,68 @@ fun MenuScreen(
 
     var selectedCategory by remember { mutableStateOf(categories.first()) }
 
-    // 店舗情報
-    val store = remember(storeId) {
-        StoreDataRepository.getStoreById(storeId)
-    }
+    // 一時選択数量: productId -> quantity
+    val tempQuantities = remember(storeId) { mutableStateMapOf<Int, Int>() }
 
-    // この店舗に属する全商品
-    val allProductsForStore = remember(storeId) {
-        StoreDataRepository.getProductsByStore(storeId)
-    }
-
-    // productId -> Product のマップ（合計金額計算用）
-    val productMap = remember(storeId) {
-        allProductsForStore.associateBy { it.productId }
-    }
-
-    // 画面内の一時的な「選択数量」
-    // key: productId, value: 選択数量
-    val tempQuantities = remember(storeId) {
-        mutableStateMapOf<Int, Int>()
-    }
-
-    // 現在表示中カテゴリの商品一覧
-    val productsOfCategory = remember(selectedCategory, allProductsForStore) {
-        allProductsForStore.filter { it.category == selectedCategory }
-    }
-
-    // すでにカートに入っている「この店舗の合計金額」
-    val storeCartTotal = cartViewModel.cartItems
-        .filter { it.storeId == storeId }
-        .sumOf { it.price * it.quantity }
-
-    // 画面内で一時選択している商品群の合計金額
-    val tempTotal = tempQuantities.entries.sumOf { (productId, qty) ->
-        val p = productMap[productId]
-        if (p != null && qty > 0) p.price * qty else 0.0
-    }
-
-    // ルートに進んでよいか？
-    val hasTempSelection = tempQuantities.values.any { it > 0 }
-    val hasCartForStore = cartViewModel.cartItems.any { it.storeId == storeId }
-    val canGoRoute = hasTempSelection || hasCartForStore
-
-    // 「カートに入れる／最短ルートへ」を押したときの共通処理
-    fun handleCommit(action: MenuCommitAction) {
-        // 一時選択をカートへ反映
-        tempQuantities.forEach { (productId, qty) ->
-            if (qty > 0) {
-                val p = productMap[productId]
-                if (p != null) {
-                    cartViewModel.addToCart(p, qty)
-                }
+    // 一時選択の合計金額（全カテゴリ合計）
+    val tempTotal by remember(storeId) {
+        derivedStateOf {
+            allProducts.sumOf { product ->
+                val q = tempQuantities[product.productId] ?: 0
+                product.price * q
             }
         }
-        // 画面内の数量をリセット
+    }
+
+    // 在庫超過確認ダイアログ用 state
+    var overStockMessage by remember { mutableStateOf<String?>(null) }
+    var pendingAction by remember { mutableStateOf<MenuCommitAction?>(null) }
+
+    // 実際にカートへ反映＆最短ルートへ遷移する処理
+    fun doCommit(action: MenuCommitAction) {
+        val selected = allProducts.filter { (tempQuantities[it.productId] ?: 0) > 0 }
+        if (selected.isEmpty()) return
+
+        // カートに追加
+        selected.forEach { product ->
+            val qty = tempQuantities[product.productId] ?: 0
+            if (qty > 0) {
+                cartViewModel.addToCart(product, qty)
+            }
+        }
+
+        // 一時選択をリセット
         tempQuantities.clear()
 
+        // 最短ルートへ遷移する場合
         if (action == MenuCommitAction.GO_ROUTE) {
-            // この店舗の最短ルート画面へ
             navController.navigate("${Routes.ROUTE}/$storeId")
+        }
+    }
+
+    // ボタン押下時の共通チェック（在庫超過確認）
+    fun handleCommitRequest(action: MenuCommitAction) {
+        val selected = allProducts.filter { (tempQuantities[it.productId] ?: 0) > 0 }
+        if (selected.isEmpty()) {
+            // 何も選んでいなければ何もしない（必要ならメッセージ表示も可）
+            return
+        }
+
+        val over = selected.filter { product ->
+            val qty = tempQuantities[product.productId] ?: 0
+            qty > product.stock
+        }
+
+        if (over.isNotEmpty()) {
+            val first = over.first()
+            val qty = tempQuantities[first.productId] ?: 0
+            overStockMessage =
+                "選択された数量が在庫数を超えている商品があります。\n" +
+                        "例：${first.name} 在庫：${first.stock} / 選択数：$qty\n\n" +
+                        "このまま続行しますか？"
+            pendingAction = action
+        } else {
+            doCommit(action)
         }
     }
 
@@ -114,8 +130,8 @@ fun MenuScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    // 上部タイトルに「店舗名」を表示
-                    Text(text = store?.storeName ?: "商品一覧")
+                    // 店舗名をタイトルに表示
+                    Text(store?.storeName ?: "商品一覧")
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -144,24 +160,31 @@ fun MenuScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 商品一覧（上部：スクロール領域）
+            // 選択中カテゴリの商品一覧
+            val productsInCategory = remember(selectedCategory, allProducts) {
+                allProducts.filter { it.category == selectedCategory }
+            }
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                items(productsOfCategory, key = { it.productId }) { product ->
+                items(productsInCategory) { product ->
                     val q = tempQuantities[product.productId] ?: 0
+
                     ProductCard(
                         product = product,
                         quantity = q,
-                        onQuantityChange = { newQty ->
-                            // 0以下は削除扱い
-                            if (newQty <= 0) {
-                                tempQuantities.remove(product.productId)
-                            } else {
-                                tempQuantities[product.productId] = newQty
+                        onIncrease = {
+                            val current = tempQuantities[product.productId] ?: 0
+                            tempQuantities[product.productId] = current + 1
+                        },
+                        onDecrease = {
+                            val current = tempQuantities[product.productId] ?: 0
+                            if (current > 0) {
+                                tempQuantities[product.productId] = current - 1
                             }
                         }
                     )
@@ -170,14 +193,10 @@ fun MenuScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 画面下部情報
+            // 一時選択の合計金額
             Text(
-                text = "この店舗のカート合計（反映済み）：${storeCartTotal.toInt()} 円",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "今回の選択（未反映）：${tempTotal.toInt()} 円",
-                style = MaterialTheme.typography.bodyMedium
+                text = "一時選択の合計：${tempTotal.toInt()} 円",
+                style = MaterialTheme.typography.titleMedium
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -185,23 +204,61 @@ fun MenuScreen(
             // 下部ボタン：カートに入れる ＋ 最短ルートへ
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
-                    onClick = { handleCommit(MenuCommitAction.ADD_TO_CART) },
-                    modifier = Modifier.weight(1f)
+                    onClick = { handleCommitRequest(MenuCommitAction.ADD_TO_CART) },
+                    modifier = Modifier.weight(1f),
+                    enabled = tempTotal > 0.0
                 ) {
                     Text("カートに入れる")
                 }
 
                 Button(
-                    onClick = { handleCommit(MenuCommitAction.GO_ROUTE) },
+                    onClick = { handleCommitRequest(MenuCommitAction.GO_ROUTE) },
                     modifier = Modifier.weight(1f),
-                    enabled = canGoRoute
+                    enabled = tempTotal > 0.0
                 ) {
                     Text("最短ルートへ")
                 }
             }
         }
+    }
+
+    // 在庫超過確認ダイアログ
+    if (overStockMessage != null) {
+        AlertDialog(
+            onDismissRequest = {
+                overStockMessage = null
+                pendingAction = null
+            },
+            title = { Text("在庫数超過の確認") },
+            text = { Text(overStockMessage!!) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val action = pendingAction
+                        overStockMessage = null
+                        pendingAction = null
+                        if (action != null) {
+                            doCommit(action)
+                        }
+                    }
+                ) {
+                    Text("はい")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        overStockMessage = null
+                        pendingAction = null
+                    }
+                ) {
+                    Text("キャンセル")
+                }
+            }
+        )
     }
 }
