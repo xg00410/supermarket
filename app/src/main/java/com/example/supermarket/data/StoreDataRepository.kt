@@ -18,6 +18,9 @@ import com.example.supermarket.R
 import com.example.supermarket.models.Product
 import com.example.supermarket.models.Store
 import kotlin.random.Random
+import com.example.supermarket.models.Prefecture
+import com.example.supermarket.models.Region   // 现在先不用也没关系，给以后预留
+
 
 /**
  * StoreDataRepository
@@ -172,4 +175,106 @@ object StoreDataRepository {
      * 全店舗・全商品の一覧を取得する（デバッグ用）。
      */
     fun getAllProducts(): List<Product> = internalAllProducts
+
+
+
+    // =========================================================
+    //  ここから下は 「店舗選択3層構造」用の追加コード
+    // =========================================================
+
+    /**
+     * 地域ID から、その地域に属する都道府県一覧を取得する。
+     * （北海道 / 東北 / 関東 …）
+     */
+    fun getPrefecturesByRegion(regionId: Int): List<Prefecture> =
+        prefectures.filter { it.regionId == regionId }
+
+    /**
+     * 都道府県ID から、その都道府県に属する店舗一覧を取得する。
+     * 現段階では簡易実装として「全店舗」を返している。
+     * TODO:
+     *   将来的には storeId と prefectureId を紐づけて、
+     *   本当にその都道府県内の店舗だけを返すようにする。
+     */
+    fun getStoresByPrefecture(prefectureId: Int): List<Store> {
+        // 今はとりあえず「全部の店舗」を返す
+        return stores
+    }
+
+    /**
+     * 店舗名／住所に対する簡易全文検索。
+     */
+    fun searchStores(keyword: String): List<Store> {
+        val lower = keyword.lowercase()
+        return stores.filter { store ->
+            store.storeName.lowercase().contains(lower) ||
+                    store.address.lowercase().contains(lower)
+        }
+    }
+
+    // ---------------------------------------------------------
+    //  8地域 ＋ 47都道府県のマスターデータ
+    // ---------------------------------------------------------
+
+    private val regions = listOf(
+        Region(1, "北海道"),
+        Region(2, "東北"),
+        Region(3, "関東"),
+        Region(4, "中部"),
+        Region(5, "近畿"),
+        Region(6, "中国"),
+        Region(7, "四国"),
+        Region(8, "九州・沖縄")
+    )
+
+    private val prefectures = listOf(
+        Prefecture(1, 1, "北海道"),
+        Prefecture(2, 2, "青森県"),
+        Prefecture(3, 2, "岩手県"),
+        Prefecture(4, 2, "宮城県"),
+        Prefecture(5, 2, "秋田県"),
+        Prefecture(6, 2, "山形県"),
+        Prefecture(7, 2, "福島県"),
+        Prefecture(8, 3, "茨城県"),
+        Prefecture(9, 3, "栃木県"),
+        Prefecture(10, 3, "群馬県"),
+        Prefecture(11, 3, "埼玉県"),
+        Prefecture(12, 3, "千葉県"),
+        Prefecture(13, 3, "東京都"),
+        Prefecture(14, 3, "神奈川県"),
+        Prefecture(15, 4, "新潟県"),
+        Prefecture(16, 4, "富山県"),
+        Prefecture(17, 4, "石川県"),
+        Prefecture(18, 4, "福井県"),
+        Prefecture(19, 4, "山梨県"),
+        Prefecture(20, 4, "長野県"),
+        Prefecture(21, 4, "岐阜県"),
+        Prefecture(22, 4, "静岡県"),
+        Prefecture(23, 4, "愛知県"),
+        Prefecture(24, 5, "三重県"),
+        Prefecture(25, 5, "滋賀県"),
+        Prefecture(26, 5, "京都府"),
+        Prefecture(27, 5, "大阪府"),
+        Prefecture(28, 5, "兵庫県"),
+        Prefecture(29, 5, "奈良県"),
+        Prefecture(30, 5, "和歌山県"),
+        Prefecture(31, 6, "鳥取県"),
+        Prefecture(32, 6, "島根県"),
+        Prefecture(33, 6, "岡山県"),
+        Prefecture(34, 6, "広島県"),
+        Prefecture(35, 6, "山口県"),
+        Prefecture(36, 7, "徳島県"),
+        Prefecture(37, 7, "香川県"),
+        Prefecture(38, 7, "愛媛県"),
+        Prefecture(39, 7, "高知県"),
+        Prefecture(40, 8, "福岡県"),
+        Prefecture(41, 8, "佐賀県"),
+        Prefecture(42, 8, "長崎県"),
+        Prefecture(43, 8, "熊本県"),
+        Prefecture(44, 8, "大分県"),
+        Prefecture(45, 8, "宮崎県"),
+        Prefecture(46, 8, "鹿児島県"),
+        Prefecture(47, 8, "沖縄県")
+    )
+
 }

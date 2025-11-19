@@ -17,6 +17,8 @@ import com.example.supermarket.ui.Routes
 fun StoreSelectScreen(
     navController: NavController
 ) {
+    // 8地域マスタ（StoreDataRepository 側の Region とは別に、
+    // ここではボタン表示用に ID と名称だけ持つ）
     val regionNames = listOf(
         Pair(1, "北海道"),
         Pair(2, "東北"),
@@ -47,6 +49,7 @@ fun StoreSelectScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
+            // キーワード検索
             OutlinedTextField(
                 value = keyword,
                 onValueChange = {
@@ -80,6 +83,7 @@ fun StoreSelectScreen(
 
             Divider()
 
+            // 地域から探す
             Text("地域から探す", style = MaterialTheme.typography.titleMedium)
 
             LazyColumn(
@@ -92,9 +96,7 @@ fun StoreSelectScreen(
 
                     Button(
                         onClick = {
-                            navController.navigate(
-                                Routes.STORE_PREFECTURE + "/" + id
-                            )
+                            navController.navigate(Routes.STORE_PREFECTURE + "/" + id)
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

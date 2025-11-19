@@ -20,6 +20,7 @@ fun StorePrefectureScreen(
     navController: NavController,
     regionId: Int
 ) {
+    // StoreDataRepository に追加したマスターデータを利用
     val prefectures = remember(regionId) {
         StoreDataRepository.getPrefecturesByRegion(regionId)
     }
@@ -61,9 +62,9 @@ fun StorePrefectureScreen(
 
                     Button(
                         onClick = {
+                            // keyword=none として第三層へ
                             navController.navigate(
-                                Routes.STORE_RESULT +
-                                        "/keyword=none/pref=" + pref.prefectureId
+                                Routes.STORE_RESULT + "/keyword=none/pref=" + pref.prefectureId
                             )
                         },
                         modifier = Modifier.fillMaxWidth()

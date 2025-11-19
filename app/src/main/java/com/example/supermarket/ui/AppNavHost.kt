@@ -66,7 +66,6 @@ fun AppNavHost(
             )
         }
 
-
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onBack = { navController.popBackStack() },
@@ -114,6 +113,8 @@ fun AppNavHost(
         composable(Routes.STORE_MAP) {
             StoreMapScreen(navController)
         }
+
+        // 第二層：地域 → 都道府県
         composable(
             route = Routes.STORE_PREFECTURE + "/{regionId}"
         ) { backStack ->
@@ -121,6 +122,7 @@ fun AppNavHost(
             StorePrefectureScreen(navController, regionId)
         }
 
+        // 第三層：都道府県 or キーワード → 店舗一覧
         composable(
             route = Routes.STORE_RESULT + "/keyword={keyword}/pref={pref}"
         ) { backStack ->
@@ -129,23 +131,7 @@ fun AppNavHost(
             StoreResultScreen(navController, keyword, pref)
         }
 
-        composable(
-            route = Routes.STORE_DETAIL + "/{storeId}"
-        ) { backStack ->
-            val storeId = backStack.arguments?.getString("storeId")!!
-            StoreDetailScreen(navController, storeId)
-        }
-        composable(
-            route = "${Routes.STORE_REGION}/{prefecture}",
-            arguments = listOf(navArgument("prefecture") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val prefecture = backStackEntry.arguments?.getString("prefecture") ?: ""
-            StoreRegionScreen(
-                navController = navController,
-                prefecture = prefecture
-            )
-        }
-
+        // 店舗詳細
         composable(
             route = "${Routes.STORE_DETAIL}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })
@@ -157,6 +143,19 @@ fun AppNavHost(
             )
         }
 
+        // 既存：都道府県→店舗一覧（旧仕様 store_region）
+        composable(
+            route = "${Routes.STORE_REGION}/{prefecture}",
+            arguments = listOf(navArgument("prefecture") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val prefecture = backStackEntry.arguments?.getString("prefecture") ?: ""
+            StoreRegionScreen(
+                navController = navController,
+                prefecture = prefecture
+            )
+        }
+
+        // 店舗内マップ拡大
         composable(
             route = "${Routes.STORE_MAP_EXPANDED}/{storeId}",
             arguments = listOf(navArgument("storeId") { type = NavType.StringType })

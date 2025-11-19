@@ -20,11 +20,12 @@ fun StoreResultScreen(
     keyword: String?,
     prefectureId: Int?
 ) {
+    // 第一段：都道府県 or キーワードで初期リストを決定
     val originalList = remember(keyword, prefectureId) {
         when {
             prefectureId != null && prefectureId > 0 ->
                 StoreDataRepository.getStoresByPrefecture(prefectureId)
-            keyword != null && keyword.isNotBlank() ->
+            keyword != null && keyword.isNotBlank() && keyword != "none" ->
                 StoreDataRepository.searchStores(keyword)
             else -> emptyList()
         }
@@ -32,6 +33,7 @@ fun StoreResultScreen(
 
     var filterText by remember { mutableStateOf("") }
 
+    // 第二段：結果内絞り込み
     val filteredList = remember(filterText, originalList) {
         if (filterText.isBlank()) {
             originalList
@@ -94,9 +96,11 @@ fun StoreResultScreen(
                         Column(
                             modifier = Modifier.padding(12.dp)
                         ) {
-                            Text(store.storeName, style = MaterialTheme.typography.titleMedium)
-                            Text(store.address)
-                            Text("営業時間：${store.openTime}〜${store.closeTime}")
+                            Text(
+                                text = store.storeName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(text = store.address)
                         }
                     }
                 }
