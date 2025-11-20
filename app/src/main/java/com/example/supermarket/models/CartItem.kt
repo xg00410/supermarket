@@ -26,5 +26,5 @@ data class CartItem(
     val category: String,
     val price: Double,
     var quantity: Int,
-    @DrawableRes val imageRes: Int?
+    val imageRes: Int?
 )
