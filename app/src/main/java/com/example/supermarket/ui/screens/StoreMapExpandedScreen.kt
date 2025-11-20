@@ -66,7 +66,7 @@ fun StoreMapExpandedScreen(
                     .weight(1f)
             ) {
                 Image(
-                    painter = painterResource(id = store?.floorMapRes ?: R.drawable.logo),
+                    painter = painterResource(id = store?.floorMapRes ?: R.drawable.store_floor_map),
                     contentDescription = "店内マップ",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit

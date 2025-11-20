@@ -30,6 +30,9 @@ import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
 
+
+
+
 // 商品確定時の動作種別
 private enum class MenuCommitAction {
     ADD_TO_CART,     // カートに入れる
@@ -43,6 +46,12 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
+    // カートの状態（この店舗の商品のみ抽出）
+
+    val cartItemsInThisStore = cartViewModel.cartItems.filter { item -> item.storeId == storeId }
+
+
+
     // 店舗情報（店名表示用）
     val store = remember(storeId) {
         StoreDataRepository.getStoreById(storeId)
@@ -62,7 +71,7 @@ fun MenuScreen(
     var selectedCategory by remember { mutableStateOf(categories.first()) }
 
     // 一時選択数量: productId -> quantity
-    val tempQuantities = remember(storeId) { mutableStateMapOf<Int, Int>() }
+    val tempQuantities = cartViewModel.tempSelectedItems
 
     // 一時選択の合計金額（全カテゴリ合計）
     val tempTotal by remember(storeId) {
@@ -216,12 +225,23 @@ fun MenuScreen(
                 }
 
                 Button(
-                    onClick = { handleCommitRequest(MenuCommitAction.GO_ROUTE) },
+                    onClick = {
+                        if (tempTotal > 0.0) {
+                            // まだ一時選択中の商品がある → 在庫チェックしてからカート追加＋ルートへ
+                            handleCommitRequest(MenuCommitAction.GO_ROUTE)
+                        } else if (cartItemsInThisStore.isNotEmpty()) {
+                            // 一時選択は空だが、この店舗のカート商品は存在する → そのままルート画面へ
+                            navController.navigate("${Routes.ROUTE}/$storeId")
+                        }
+                    },
                     modifier = Modifier.weight(1f),
-                    enabled = tempTotal > 0.0
+                    enabled = (tempTotal > 0.0) || cartItemsInThisStore.isNotEmpty()
+
+
                 ) {
                     Text("最短ルートへ")
                 }
+
             }
         }
     }

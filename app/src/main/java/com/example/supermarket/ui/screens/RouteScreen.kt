@@ -10,7 +10,9 @@
 
 package com.example.supermarket.ui.screens
 
+
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +29,13 @@ import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.viewmodel.CartViewModel
 import java.time.LocalDateTime
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.example.supermarket.R
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,15 +105,131 @@ fun RouteScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ------------------- 簡易マップ（仮） -------------------
-            Box(
+            // ------------------- 店内マップ表示 -------------------
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .background(Color(0xFFEAEAEA), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
+                    .weight(1f),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("ここに簡易マップを表示（後で本番用に差し替え）")
+                if (store != null) {
+                    Image(
+                        painter = painterResource(id = store?.floorMapRes ?: R.drawable.store_floor_map),
+                        contentDescription = "店内マップ",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFEAEAEA)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("店舗情報が見つかりません")
+                    }
+                }
+            }
+
+            // ------------------- エリア順序（手動並び替え） -------------------
+            val usedAreas = remember(cartItems) {
+                cartItems.map { it.category }.distinct()
+            }
+            val areasOrder = remember(usedAreas) {
+                mutableStateListOf<String>().apply {
+                    clear()
+                    addAll(usedAreas)
+                }
+            }
+
+            if (areasOrder.isNotEmpty()) {
+                Text("エリア順序", style = MaterialTheme.typography.titleMedium)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    areasOrder.forEachIndexed { index, area ->
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+
+                            // 左矢印：前の位置へ移動（小さめ）
+                            IconButton(
+                                onClick = {
+                                    if (index > 0) {
+                                        val tmp = areasOrder[index]
+                                        areasOrder[index] = areasOrder[index - 1]
+                                        areasOrder[index - 1] = tmp
+                                    }
+                                },
+                                enabled = index > 0,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowLeft,
+                                    contentDescription = "左へ移動"
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = area,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+
+                            // 右矢印：後ろの位置へ移動（小さめ）
+                            IconButton(
+                                onClick = {
+                                    if (index < areasOrder.lastIndex) {
+                                        val tmp = areasOrder[index]
+                                        areasOrder[index] = areasOrder[index + 1]
+                                        areasOrder[index + 1] = tmp
+                                    }
+                                },
+                                enabled = index < areasOrder.lastIndex,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowRight,
+                                    contentDescription = "右へ移動"
+                                )
+                            }
+                        }
+                    }
+                }
+
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+// エリア順に並べ替えた商品リスト
+            val sortedItems = if (areasOrder.isEmpty()) {
+                cartItems
+            } else {
+                cartItems.sortedWith(
+                    compareBy(
+                        { item ->
+                            val idx = areasOrder.indexOf(item.category)
+                            if (idx == -1) Int.MAX_VALUE else idx
+                        },
+                        { it.productId }
+                    )
+                )
             }
 
             // ------------------- 下部 横スクロールの商品一覧 -------------------
@@ -117,37 +242,57 @@ fun RouteScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                cartItems.forEach { item ->
+                sortedItems.forEach { item ->
 
                     val isChecked = checkedMap[item.productId] ?: false
 
-                    Card(
+                    Box(
                         modifier = Modifier
-                            .width(160.dp)
-                            .height(120.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isChecked) Color(0xFFBBDEFB) else Color.White
-                        )
+                            .width(150.dp)
+                            .height(100.dp)
+                            .background(
+                                color = if (isChecked) Color(0xFFBBDEFB) else Color.White,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFDDDDDD),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .padding(8.dp)
                     ) {
                         Column(
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .fillMaxSize(),
+                            modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(item.name, maxLines = 1)
-
-                            Text("数量：${item.quantity}")
-
-                            Checkbox(
-                                checked = isChecked,
-                                onCheckedChange = { checked ->
-                                    checkedMap[item.productId] = checked
-                                }
+                            Text(
+                                text = item.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1
                             )
+
+                            Text(
+                                text = "数量：${item.quantity}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isChecked,
+                                    onCheckedChange = { checked ->
+                                        checkedMap[item.productId] = checked
+                                    },
+                                    modifier = Modifier.size(18.dp) // 小さめのチェックボックス
+                                )
+                            }
                         }
                     }
+
+
                 }
             }
         }

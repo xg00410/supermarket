@@ -38,7 +38,8 @@ object StoreDataRepository {
             latitude = 35.6900,
             longitude = 139.7000,
             imageRes = R.drawable.logo,      // 仮: 全店舗共通の画像
-            floorMapRes = R.drawable.logo   // 仮: 全店舗共通の店内マップ
+            floorMapRes = R.drawable.store_floor_map   // 共通の店内マップ画像
+
         ),
         Store(
             storeId = "S002",
@@ -47,7 +48,8 @@ object StoreDataRepository {
             latitude = 35.4656,
             longitude = 139.6223,
             imageRes = R.drawable.logo,
-            floorMapRes = R.drawable.logo
+            floorMapRes = R.drawable.store_floor_map   // 共通の店内マップ画像
+
         ),
         Store(
             storeId = "S003",
@@ -56,7 +58,8 @@ object StoreDataRepository {
             latitude = 35.6074,
             longitude = 140.1065,
             imageRes = R.drawable.logo,
-            floorMapRes = R.drawable.logo
+            floorMapRes = R.drawable.store_floor_map   // 共通の店内マップ画像
+
         )
     )
 

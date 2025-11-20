@@ -13,11 +13,7 @@ import com.example.supermarket.models.Product
 import java.time.LocalDateTime
 
 class CartViewModel : ViewModel() {
-    // ==============================
-    // 一時選択中の商品（画面遷移しても保持）
-    // 商品ID → 選択数量
-    // ==============================
-    val tempSelectedItems = mutableStateMapOf<Int, Int>()
+
     // カート内の商品一覧
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
