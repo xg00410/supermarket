@@ -11,6 +11,7 @@
 //   - 各店舗ブロックの下に「最短ルートへ」ボタンを配置し，
 //     その店舗のルート画面へ直接遷移する。
 //   - 画面下部の「どの店舗か分からない」全体用ルートボタンは削除。
+//   - ★在庫数を超えている場合，「最短ルートへ」押下時に確認ダイアログを表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -43,6 +44,10 @@ fun CartScreen(
     cartViewModel: CartViewModel
 ) {
     val cartItems = cartViewModel.cartItems
+
+    // ★在庫超過チェック用の状態（ダイアログ）
+    val overStockMessageState = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    val pendingStoreIdState = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -220,7 +225,29 @@ fun CartScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Button(
                                 onClick = {
-                                    navController.navigate("${Routes.ROUTE}/$storeId")
+                                    // ★この店舗内で在庫超過している商品があるかどうかチェック
+                                    val over = itemsInStore.mapNotNull { cartItem ->
+                                        val product = StoreDataRepository
+                                            .getProductsByStore(cartItem.storeId)
+                                            .find { it.productId == cartItem.productId }
+                                        if (product != null && cartItem.quantity > product.stock) {
+                                            product to cartItem.quantity
+                                        } else {
+                                            null
+                                        }
+                                    }
+
+                                    if (over.isNotEmpty()) {
+                                        val (product, qty) = over.first()
+                                        overStockMessageState.value =
+                                            "選択された数量が在庫数を超えている商品があります。\n" +
+                                                    "例：${product.name} 在庫：${product.stock} / カート数量：$qty\n\n" +
+                                                    "このまま続行しますか？"
+                                        pendingStoreIdState.value = storeId
+                                    } else {
+                                        // 在庫超過なし → そのままルート画面へ
+                                        navController.navigate("${Routes.ROUTE}/$storeId")
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -243,7 +270,41 @@ fun CartScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // ※ 画面下部の「最短ルートへ」ボタンは削除。
+            // ★在庫超過確認ダイアログ
+            overStockMessageState.value?.let { msg ->
+                AlertDialog(
+                    onDismissRequest = {
+                        overStockMessageState.value = null
+                        pendingStoreIdState.value = null
+                    },
+                    title = { Text("在庫数を超えています") },
+                    text = { Text(msg) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val target = pendingStoreIdState.value
+                                if (target != null) {
+                                    navController.navigate("${Routes.ROUTE}/$target")
+                                }
+                                overStockMessageState.value = null
+                                pendingStoreIdState.value = null
+                            }
+                        ) {
+                            Text("はい")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                overStockMessageState.value = null
+                                pendingStoreIdState.value = null
+                            }
+                        ) {
+                            Text("いいえ")
+                        }
+                    }
+                )
+            }
         }
     }
 }

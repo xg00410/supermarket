@@ -26,5 +26,6 @@ data class CartItem(
     val category: String,
     val price: Double,
     var quantity: Int,
-    val imageRes: Int?
+    val imageRes: Int?,
+    var isChecked: Boolean = false
 )

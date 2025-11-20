@@ -236,4 +236,12 @@ class CartViewModel : ViewModel() {
 
         syncSelectionState()
     }
+    // List2Screen 用：删除已选中的商品
+    fun deleteSelectedItems() {
+        val checkedIds = _cartItems.filter { it.isChecked }.map { it.productId }.toSet()
+        if (checkedIds.isNotEmpty()) {
+            _cartItems.removeAll { it.productId in checkedIds }
+        }
+    }
+
 }
