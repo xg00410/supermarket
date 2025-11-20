@@ -1,12 +1,3 @@
-// =========================================================
-// File: CartViewModel.kt
-// 役割:
-//   - カート内商品の状態管理
-//   - list / list2 画面での選択状態管理
-//   - 最短ルート画面からの「取得済み商品」を履歴に保存
-//   - 履歴一覧画面（OrderHistoryScreen）へ履歴データを提供
-// =========================================================
-
 package com.example.supermarket.viewmodel
 
 import androidx.compose.runtime.getValue
@@ -16,53 +7,47 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.supermarket.models.CartItem
-import com.example.supermarket.models.Product
 import com.example.supermarket.models.OrderHistory
 import com.example.supermarket.models.OrderHistoryItem
+import com.example.supermarket.models.Product
 import java.time.LocalDateTime
 
 class CartViewModel : ViewModel() {
 
-    // ----------------------------------------------------
-    // カート内商品
-    // ----------------------------------------------------
+    // カート内の商品一覧
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
 
-    // ----------------------------------------------------
-    // list2 用の選択状態
-    //   - selectedItemIds: 商品単位のチェック状態
-    //   - selectedStoreIds: 店舗単位のチェック状態
-    //   - isSelectAll: 「すべて選択」がONかどうか
-    // ----------------------------------------------------
-    val selectedItemIds = mutableStateMapOf<Int, Boolean>()
-    val selectedStoreIds = mutableStateMapOf<String, Boolean>()
-    var isSelectAll by mutableStateOf(false)
-        private set
-
-    // ----------------------------------------------------
-    // 購入履歴（RouteScreen 終了時に追加）
-    //   - OrderHistoryScreen が参照する
-    // ----------------------------------------------------
+    // 購入履歴
     private val _orderHistory = mutableStateListOf<OrderHistory>()
     val orderHistory: List<OrderHistory> get() = _orderHistory
 
-    // ====================================================
-    //                      カート操作
-    // ====================================================
+    // list2 用の選択状態（商品単位）
+    private val _selectedItemIds = mutableStateMapOf<Int, Boolean>()
+    val selectedItemIds: Map<Int, Boolean> get() = _selectedItemIds
+
+    // list2 用の選択状態（店舗単位）
+    private val _selectedStoreIds = mutableStateMapOf<String, Boolean>()
+    val selectedStoreIds: Map<String, Boolean> get() = _selectedStoreIds
+
+    // 「すべて選択」チェックボックスの状態
+    private var _selectAll by mutableStateOf(false)
+    val isSelectAll: Boolean get() = _selectAll
+
+    // -------------------------
+    // カート操作
+    // -------------------------
 
     /**
-     * 商品一覧（MenuScreen）からカートへ追加。
-     *
-     * @param product  追加対象の商品
-     * @param quantity 選択中の数量（0 以下なら無視）
+     * 商品をカートに追加する
+     * 同じ productId が既にあれば数量だけ加算する
      */
     fun addToCart(product: Product, quantity: Int) {
         if (quantity <= 0) return
 
         val existing = _cartItems.find { it.productId == product.productId }
         if (existing != null) {
-            // すでにカートにある場合は数量だけ加算
+            // 既にカートにある → 数量だけ増やす
             existing.quantity += quantity
         } else {
             // 新規追加
@@ -70,25 +55,25 @@ class CartViewModel : ViewModel() {
                 CartItem(
                     productId = product.productId,
                     storeId = product.storeId,
+                    storeName = product.storeName,
                     name = product.name,
                     category = product.category,
-                    quantity = quantity,
                     price = product.price,
-                    storeName = product.storeName,
+                    quantity = quantity,
                     imageRes = product.imageRes
                 )
             )
         }
+        // list2 の選択状態と整合を取る
+        syncSelectionState()
     }
 
-    /** 数量＋1（list / list2 / カート画面共通） */
     fun increaseQuantity(productId: Int) {
         _cartItems.find { it.productId == productId }?.let { item ->
             item.quantity++
         }
     }
 
-    /** 数量−1（ただし1未満にはしない） */
     fun decreaseQuantity(productId: Int) {
         _cartItems.find { it.productId == productId }?.let { item ->
             if (item.quantity > 1) {
@@ -97,76 +82,119 @@ class CartViewModel : ViewModel() {
         }
     }
 
-    /** 商品を1件削除 */
     fun removeItem(productId: Int) {
         _cartItems.removeAll { it.productId == productId }
-        // 選択状態も消しておく
-        selectedItemIds.remove(productId)
+        _selectedItemIds.remove(productId)
+        syncSelectionState()
     }
 
-    /** カート内の合計金額 */
-    fun totalPrice(): Double {
-        return _cartItems.sumOf { it.quantity * it.price }
-    }
+    fun totalPrice(): Double =
+        _cartItems.sumOf { it.quantity * it.price }
 
-    // ====================================================
-    //                list2 用 チェックボックス制御
-    // ====================================================
-
-    /** すべて選択／解除 */
-    fun selectAll() {
-        isSelectAll = !isSelectAll
-
-        selectedItemIds.clear()
-        selectedStoreIds.clear()
-
-        if (isSelectAll) {
-            _cartItems.forEach { item ->
-                selectedItemIds[item.productId] = true
-                selectedStoreIds[item.storeId] = true
-            }
-        }
-    }
-
-    /** 店舗単位のチェック切替 */
-    fun toggleStoreChecked(storeId: String) {
-        val cur = selectedStoreIds[storeId] ?: false
-        selectedStoreIds[storeId] = !cur
-
-        // 店舗の商品をまとめて更新
-        _cartItems.filter { it.storeId == storeId }.forEach {
-            selectedItemIds[it.productId] = !cur
-        }
-    }
-
-    /** 商品単位のチェック切替 */
-    fun toggleItemChecked(productId: Int) {
-        val cur = selectedItemIds[productId] ?: false
-        selectedItemIds[productId] = !cur
-    }
-
-    /** チェックされた商品を削除（list2 の「削除」ボタン） */
-    fun deleteSelectedItems() {
-        val removeIds = selectedItemIds.filter { it.value }.keys
-        _cartItems.removeAll { it.productId in removeIds }
-
-        selectedItemIds.clear()
-        selectedStoreIds.clear()
-        isSelectAll = false
-    }
-
-    // ====================================================
-    //           最短ルート画面 → 履歴への反映
-    // ====================================================
+    // -------------------------
+    // list2 用「選択状態」操作
+    // -------------------------
 
     /**
-     * RouteScreen の「終了」ボタンから呼び出される。
-     * チェックされた商品だけを履歴に保存する。
-     *
-     * @param storeId   店舗ID
-     * @param storeName 店舗名
-     * @param items     チェックされた CartItem 一覧
-     * @param orderedAt 購入日時（RouteScreen から渡される LocalDateTime）
+     * すべて選択／すべて解除
+     */
+    fun selectAll() {
+        val newState = !_selectAll
+        _selectAll = newState
+
+        // 全商品に同じフラグを設定
+        _cartItems.forEach { item ->
+            _selectedItemIds[item.productId] = newState
+        }
+
+        // 店舗ごとのチェック状態を更新
+        val grouped = _cartItems.groupBy { it.storeId }
+        grouped.forEach { (storeId, items) ->
+            _selectedStoreIds[storeId] = items.all { _selectedItemIds[it.productId] == true }
+        }
+    }
+
+    /**
+     * 店舗のチェックを ON/OFF
+     * その店舗に属する商品もまとめて ON/OFF する
+     */
+    fun toggleStoreChecked(storeId: String) {
+        val itemsInStore = _cartItems.filter { it.storeId == storeId }
+        if (itemsInStore.isEmpty()) return
+
+        val allSelected = itemsInStore.all { _selectedItemIds[it.productId] == true }
+        val newState = !allSelected
+
+        itemsInStore.forEach { item ->
+            _selectedItemIds[item.productId] = newState
+        }
+        _selectedStoreIds[storeId] = newState
+
+        updateSelectAllFlag()
+    }
+
+    /**
+     * 商品 1 件分のチェックを ON/OFF
+     * 店舗単位のチェック状態と「すべて選択」を連動させる
+     */
+    fun toggleItemChecked(productId: Int) {
+        val item = _cartItems.find { it.productId == productId } ?: return
+
+        val current = _selectedItemIds[productId] == true
+        _selectedItemIds[productId] = !current
+
+        // 店舗単位のチェック状態更新
+        val itemsInStore = _cartItems.filter { it.storeId == item.storeId }
+        _selectedStoreIds[item.storeId] =
+            itemsInStore.all { _selectedItemIds[it.productId] == true }
+
+        updateSelectAllFlag()
+    }
+
+    /**
+     * _cartItems と選択状態マップの整合性を取る
+     * （商品追加・削除後に呼び出す）
+     */
+    private fun syncSelectionState() {
+        // カートに存在する商品のキーを保証
+        _cartItems.forEach { item ->
+            if (!_selectedItemIds.containsKey(item.productId)) {
+                _selectedItemIds[item.productId] = false
+            }
+        }
+
+        // すでにカートに存在しない商品のキーを削除
+        val validIds = _cartItems.map { it.productId }.toSet()
+        val toRemove = _selectedItemIds.keys - validIds
+        toRemove.forEach { _selectedItemIds.remove(it) }
+
+        // 店舗ごとのチェック状態を再計算
+        _selectedStoreIds.clear()
+        val grouped = _cartItems.groupBy { it.storeId }
+        grouped.forEach { (storeId, items) ->
+            _selectedStoreIds[storeId] =
+                items.all { _selectedItemIds[it.productId] == true }
+        }
+
+        updateSelectAllFlag()
+    }
+
+    /**
+     * 「すべて選択」フラグを再計算
+     */
+    private fun updateSelectAllFlag() {
+        _selectAll =
+            _cartItems.isNotEmpty() &&
+                    _cartItems.all { _selectedItemIds[it.productId] == true }
+    }
+
+    // -------------------------
+    // 履歴操作（RouteScreen の終了ボタン用）
+    // -------------------------
+
+    /**
+     * ルート画面の「終了」時に、
+     * チェック済み商品を 1 件の注文履歴として登録する
      */
     fun addHistoryEntry(
         storeId: String,
@@ -176,36 +204,36 @@ class CartViewModel : ViewModel() {
     ) {
         if (items.isEmpty()) return
 
-        val historyItems = items.map { cartItem ->
+        val historyItems = items.map {
             OrderHistoryItem(
-                productId = cartItem.productId,
-                name = cartItem.name,
-                price = cartItem.price,
-                quantity = cartItem.quantity
+                productId = it.productId,
+                name = it.name,
+                price = it.price,
+                quantity = it.quantity
             )
         }
 
-        val entry = OrderHistory(
-            orderId = System.currentTimeMillis(), // 一意ID（簡易）
+        val historyEntry = OrderHistory(
+            orderId = System.currentTimeMillis(),
             storeId = storeId,
             storeName = storeName,
             orderedAt = orderedAt,
             items = historyItems
         )
 
-        _orderHistory.add(entry)
+        _orderHistory.add(historyEntry)
     }
 
     /**
-     * RouteScreen の終了時に、
-     * 「取得済み（チェック済み）」の商品だけをカートから削除する。
+     * RouteScreen から呼び出し：
+     * チェック済みの商品だけをカートから削除する
      */
     fun removeCheckedItems(checkedIds: Set<Int>) {
         if (checkedIds.isEmpty()) return
 
         _cartItems.removeAll { it.productId in checkedIds }
+        checkedIds.forEach { _selectedItemIds.remove(it) }
 
-        // 選択状態もクリア
-        checkedIds.forEach { selectedItemIds.remove(it) }
+        syncSelectionState()
     }
 }
