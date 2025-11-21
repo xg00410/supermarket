@@ -23,7 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.*
 import com.example.supermarket.data.StoreDataRepository
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,6 +102,7 @@ fun ProfileScreen(
                 Text("設定")
             }
             // -------------------------------------------------
+            // -------------------------------------------------
             // データ取得モード切り替え（ダミー or DB）
             // -------------------------------------------------
             var useDbMode by remember { mutableStateOf(StoreDataRepository.useDatabaseMode) }
@@ -114,7 +117,7 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("データ取得モード（DB を使用）")
+                    Text(text = "データ取得モード（DB を使用）")
                     Switch(
                         checked = useDbMode,
                         onCheckedChange = { checked ->
@@ -123,6 +126,7 @@ fun ProfileScreen(
                         }
                     )
                 }
+
                 Text(
                     text = if (useDbMode) {
                         "現在：DBモード（PHP / MySQL）"

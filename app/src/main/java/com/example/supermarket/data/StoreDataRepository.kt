@@ -26,7 +26,6 @@ import kotlin.random.Random
  * 店舗および商品データを提供するオブジェクト。
  */
 object StoreDataRepository {
-    object StoreDataRepository {
 
         // -----------------------------------------------------
         // データ取得モード設定
@@ -310,4 +309,4 @@ object StoreDataRepository {
         Prefecture(46, 8, "鹿児島県"),
         Prefecture(47, 8, "沖縄県")
     )
-}}
+}

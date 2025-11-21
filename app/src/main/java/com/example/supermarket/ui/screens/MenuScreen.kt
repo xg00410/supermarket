@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,9 @@ import com.example.supermarket.net.ApiService
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
+
+
+
 
 
 
@@ -85,18 +87,20 @@ fun MenuScreen(
                         )
                     }
                 } else {
-                    // ステータス異常時はダミーデータにフォールバック
+                    // ステータス異常 → ダミーデータへフォールバック
                     StoreDataRepository.getProductsByStore(storeId)
                 }
             } catch (e: Exception) {
-                // 通信エラー時はダミーデータにフォールバック
+                // 通信エラー → ダミーデータへフォールバック
                 StoreDataRepository.getProductsByStore(storeId)
             }
         } else {
-            // ダミーモード：今まで通りリポジトリから取得
+            // ダミーモード：従来通りリポジトリから取得
             StoreDataRepository.getProductsByStore(storeId)
         }
     }
+
+    // 8カテゴリ（設計書固定）
 
 
     // 8カテゴリ（設計書固定）
@@ -177,7 +181,8 @@ fun MenuScreen(
             CenterAlignedTopAppBar(
                 title = {
                     // 店舗名をタイトルに表示
-                    Text(store?.storeName ?: "商品一覧")
+                    Text(text = store?.storeName?: "商品一覧")
+
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
