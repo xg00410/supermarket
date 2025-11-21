@@ -17,9 +17,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.supermarket.data.StoreDataRepository
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +98,39 @@ fun ProfileScreen(
                 Icon(Icons.Default.Settings, contentDescription = null)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("設定")
+            }
+            // -------------------------------------------------
+            // データ取得モード切り替え（ダミー or DB）
+            // -------------------------------------------------
+            var useDbMode by remember { mutableStateOf(StoreDataRepository.useDatabaseMode) }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("データ取得モード（DB を使用）")
+                    Switch(
+                        checked = useDbMode,
+                        onCheckedChange = { checked ->
+                            useDbMode = checked
+                            StoreDataRepository.useDatabaseMode = checked
+                        }
+                    )
+                }
+                Text(
+                    text = if (useDbMode) {
+                        "現在：DBモード（PHP / MySQL）"
+                    } else {
+                        "現在：ダミーデータモード"
+                    },
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             // 利用規約

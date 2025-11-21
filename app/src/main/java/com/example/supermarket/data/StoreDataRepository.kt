@@ -26,8 +26,17 @@ import kotlin.random.Random
  * 店舗および商品データを提供するオブジェクト。
  */
 object StoreDataRepository {
+    object StoreDataRepository {
 
-    // -----------------------------------------------------
+        // -----------------------------------------------------
+        // データ取得モード設定
+        //   false: ダミーデータ（ローカルスタブ）
+        //   true : DB + PHP(API) 経由で取得
+        // -----------------------------------------------------
+        var useDatabaseMode: Boolean = false
+
+
+        // -----------------------------------------------------
     // 店舗マスタ
     // -----------------------------------------------------
     private val stores: List<Store> = listOf(
@@ -301,4 +310,4 @@ object StoreDataRepository {
         Prefecture(46, 8, "鹿児島県"),
         Prefecture(47, 8, "沖縄県")
     )
-}
+}}

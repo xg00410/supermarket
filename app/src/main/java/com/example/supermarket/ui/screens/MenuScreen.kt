@@ -26,6 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
+import com.example.supermarket.models.Product
+import com.example.supermarket.net.ApiClient
+import com.example.supermarket.net.ApiService
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
@@ -57,10 +60,44 @@ fun MenuScreen(
         StoreDataRepository.getStoreById(storeId)
     }
 
-    // この店舗の全商品
-    val allProducts = remember(storeId) {
-        StoreDataRepository.getProductsByStore(storeId)
+    // この店舗の全商品（ダミー or DB から取得）
+    var allProducts by remember(storeId) {
+        mutableStateOf<List<Product>>(emptyList())
     }
+
+    LaunchedEffect(storeId, StoreDataRepository.useDatabaseMode) {
+        allProducts = if (StoreDataRepository.useDatabaseMode) {
+            try {
+                val api = ApiClient.retrofit.create(ApiService::class.java)
+                val res = api.getProductsByStore(storeId)
+                if (res.status == "ok" && res.data != null) {
+                    res.data.map { dto ->
+                        Product(
+                            productId = dto.product_id,
+                            storeId = storeId,
+                            storeName = store?.storeName ?: "",
+                            name = dto.name,
+                            category = dto.category ?: "その他",
+                            price = dto.price,
+                            stock = dto.stock ?: 0,
+                            imageRes = store?.imageRes
+                                ?: com.example.supermarket.R.drawable.logo
+                        )
+                    }
+                } else {
+                    // ステータス異常時はダミーデータにフォールバック
+                    StoreDataRepository.getProductsByStore(storeId)
+                }
+            } catch (e: Exception) {
+                // 通信エラー時はダミーデータにフォールバック
+                StoreDataRepository.getProductsByStore(storeId)
+            }
+        } else {
+            // ダミーモード：今まで通りリポジトリから取得
+            StoreDataRepository.getProductsByStore(storeId)
+        }
+    }
+
 
     // 8カテゴリ（設計書固定）
     val categories = listOf(

@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.supermarket.R
+import com.example.supermarket.data.RouteRepository
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -131,16 +133,24 @@ fun RouteScreen(
                 }
             }
 
-            // ------------------- エリア順序（手動並び替え） -------------------
+            // ------------------- エリア順序（TSP初期順＋手動並び替え） -------------------
             val usedAreas = remember(cartItems) {
                 cartItems.map { it.category }.distinct()
             }
-            val areasOrder = remember(usedAreas) {
+
+// TSP で計算した初期順
+            val initialAreaOrder = remember(usedAreas) {
+                RouteRepository.calcShortestAreaOrder(usedAreas)
+            }
+
+// 画面上で編集可能な順序
+            val areasOrder = remember(initialAreaOrder) {
                 mutableStateListOf<String>().apply {
                     clear()
-                    addAll(usedAreas)
+                    addAll(initialAreaOrder)
                 }
             }
+
 
             if (areasOrder.isNotEmpty()) {
                 Text("エリア順序", style = MaterialTheme.typography.titleMedium)

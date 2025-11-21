@@ -2,54 +2,75 @@
 // File: ApiService.kt
 // 概要: PHP API へのHTTPリクエスト（店舗・商品・ログイン等）を定義するインターフェース。
 // 更新者: 郭
-// 更新日: 2025-11-17
+// 更新日: 2025-11-21
 // =========================================================
 
 package com.example.supermarket.net
 
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import retrofit2.http.*
+import com.example.supermarket.models.InsertOrderBody
+import com.example.supermarket.models.LoginBody
+import com.example.supermarket.models.RegisterBody
+import com.example.supermarket.models.ApiResponse
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Query
 
-interface ApiService {
-
-    // ---- 注册接口 ----
-    @POST("register.php")
-    suspend fun register(@Body body: RequestBody): LoginResponse
-
-    // ---- 获取商品列表 ----
-    @GET("getProducts.php")
-    suspend fun getProducts(
-        @Query("store_id") storeId: Int
-    ): ProductResponse
-
-    // ---- 登录接口 ----
-    @POST("login.php")
-    suspend fun login(@Body body: RequestBody): LoginResponse
-}
-
-// ================================
-// ✅ 数据模型（Kotlin data class）
-// ================================
-
-// 商品响应（与 getProducts.php 对应）
-data class ProductResponse(
-    val status: String,
-    val data: List<Product>?
-)
-
-// 单个商品
-data class Product(
+// 商品取得用 DTO（API専用）
+data class ProductDto(
     val product_id: Int,
     val name: String,
-    val price: Double
+    val category: String?,
+    val price: Double,
+    val stock: Int?
 )
 
-// 登录响应（与 login.php 对应）
+// 汎用レスポンス（登録など）
+data class SimpleResponse(
+    val status: String,
+    val message: String?
+)
+
+// ログインレスポンス（login.php と対応）
 data class LoginResponse(
     val status: String,
-    val id: String?,         // ← 改成 String
-    val user_id: String?,    // ← 改成 String
+    val id: String?,
+    val user_id: String?,
     val name: String?,
     val message: String?
 )
+
+interface ApiService {
+
+    // ---------------- 登録 ----------------
+    @POST("register.php")
+    suspend fun register(
+        @Body body: RegisterBody
+    ): SimpleResponse
+
+    // ---------------- ログイン ----------------
+    @POST("login.php")
+    suspend fun login(
+        @Body body: LoginBody
+    ): LoginResponse
+
+    // ---------------- 商品一覧取得（店舗別） ----------------
+    // PHP 側: get_products.php?store_code=S001
+    @GET("get_products.php")
+    suspend fun getProductsByStore(
+        @Query("store_code") storeCode: String
+    ): ApiProductsResponse
+
+    // 商品一覧レスポンス
+    data class ApiProductsResponse(
+        val status: String,
+        val data: List<ProductDto>?,
+        val message: String? = null
+    )
+
+    // ---------------- 注文登録 ----------------
+    @POST("insert_order.php")
+    suspend fun insertOrder(
+        @Body body: InsertOrderBody
+    ): ApiResponse
+}

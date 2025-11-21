@@ -95,4 +95,89 @@ object RouteRepository {
 
         return result
     }
+// =========================================================
+// 追加: 巡回セールスマン問題(TSP)ベースの簡易ルート計算
+//   - 入力: カテゴリIDリスト（例: 飲料, 食品, 菓子...）
+//   - 出力: 総移動距離が短くなる順番に並べ替えたリスト
+//   - 注意: ここでは各カテゴリを円周上に仮配置して距離を定義している。
+//           実店舗レイアウトに合わせたい場合は buildSimpleAreaPoints 内の座標を調整する。
+// =========================================================
+
+    data class SimpleAreaPoint(
+        val id: String,
+        val x: Double,
+        val y: Double
+    )
+
+    /**
+     * カテゴリIDから簡易的な座標を生成する。
+     * 現段階では円形に均等配置しているだけの仮実装。
+     */
+    private fun buildSimpleAreaPoints(areaIds: List<String>): List<SimpleAreaPoint> {
+        if (areaIds.isEmpty()) return emptyList()
+
+        val distinctIds = areaIds.distinct()
+        val radius = 100.0
+        val step = 2.0 * Math.PI / distinctIds.size.coerceAtLeast(1)
+
+        return distinctIds.mapIndexed { index, id ->
+            val angle = step * index
+            SimpleAreaPoint(
+                id = id,
+                x = radius * kotlin.math.cos(angle),
+                y = radius * kotlin.math.sin(angle)
+            )
+        }
+    }
+
+    /**
+     * 巡回セールスマン問題の全探索(最大8エリア想定)で、
+     * 総移動距離が最も短くなるエリア順序を求める。
+     */
+    fun calcShortestAreaOrder(areaIds: List<String>): List<String> {
+        val distinctIds = areaIds.distinct()
+        if (distinctIds.size <= 1) return distinctIds
+
+        val points = buildSimpleAreaPoints(distinctIds)
+        if (points.size <= 1) return distinctIds
+
+        val pointMap = points.associateBy { it.id }
+
+        fun routeDistance(order: List<String>): Double {
+            var sum = 0.0
+            for (i in 0 until order.size - 1) {
+                val a = pointMap[order[i]] ?: continue
+                val b = pointMap[order[i + 1]] ?: continue
+                val dx = a.x - b.x
+                val dy = a.y - b.y
+                sum += kotlin.math.sqrt(dx * dx + dy * dy)
+            }
+            return sum
+        }
+
+        var bestOrder = distinctIds
+        var bestDistance = Double.MAX_VALUE
+
+        fun permute(current: MutableList<String>, remaining: MutableList<String>) {
+            if (remaining.isEmpty()) {
+                val d = routeDistance(current)
+                if (d < bestDistance) {
+                    bestDistance = d
+                    bestOrder = current.toList()
+                }
+                return
+            }
+            for (i in remaining.indices) {
+                val id = remaining.removeAt(i)
+                current.add(id)
+                permute(current, remaining)
+                current.removeAt(current.lastIndex)
+                remaining.add(i, id)
+            }
+        }
+
+        permute(mutableListOf(), distinctIds.toMutableList())
+        return bestOrder
+    }
+
 }
