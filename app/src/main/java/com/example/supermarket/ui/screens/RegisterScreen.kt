@@ -11,7 +11,6 @@
 
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -89,6 +88,8 @@ fun RegisterScreen(navController: NavController) {
         ) {
 
             // ------------------- 入力項目 -------------------
+
+            // ユーザーID
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
@@ -96,22 +97,30 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // パスワード
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { input ->
+                    // Tab と改行(\n)を除外してパスワードに反映
+                    password = input.filter { it != '\t' && it != '\n' }
+                },
                 label = { Text("パスワード（必須）") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
 
+            // パスワード（確認）
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = { input ->
+                    confirmPassword = input.filter { it != '\t' && it != '\n' }
+                },
                 label = { Text("パスワード（確認）") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
 
+            // 氏名（任意）
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -119,6 +128,7 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 電話番号（任意）※ハイフンなしで入力 → 送信時にフォーマット
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
@@ -126,6 +136,7 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // メールアドレス（任意）
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -176,14 +187,27 @@ fun RegisterScreen(navController: NavController) {
             // ------------------- 登録ボタン -------------------
             Button(
                 onClick = {
+                    // 必須チェック
                     if (userId.isBlank() || password.isBlank()) {
                         errorMessage = "ユーザーIDとパスワードは必須です。"
                         return@Button
                     }
+
+                    // パスワード強度チェック：8文字以上 & 英字 + 数字 を含む
+                    val hasLetter = password.any { it.isLetter() }
+                    val hasDigit = password.any { it.isDigit() }
+                    if (password.length < 8 || !hasLetter || !hasDigit) {
+                        errorMessage = "パスワードは8文字以上、英字と数字を含めてください。"
+                        return@Button
+                    }
+
+                    // パスワード一致チェック
                     if (password != confirmPassword) {
                         errorMessage = "パスワードが一致しません。"
                         return@Button
                     }
+
+                    // 利用規約同意チェック
                     if (!agreed) {
                         errorMessage = "利用規約に同意してください。"
                         return@Button

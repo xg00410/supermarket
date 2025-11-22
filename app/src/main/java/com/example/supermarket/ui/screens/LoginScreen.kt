@@ -64,12 +64,16 @@ fun LoginScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { input ->
+                    // Tab と改行(\n)を除外してパスワードに反映
+                    password = input.filter { it != '\t' && it != '\n' }
+                },
                 label = { Text("パスワード") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
+
 
             if (errorMessage != null) {
                 Text(

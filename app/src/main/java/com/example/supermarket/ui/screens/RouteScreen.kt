@@ -66,11 +66,11 @@ fun RouteScreen(
     val checkedMap = remember {
         mutableStateMapOf<Int, Boolean>()
     }
-    // カート内容変化時に初期値をリセット（全て true）
+    // カート内容変化時に初期値をリセット（全て false）
     LaunchedEffect(cartItemsInStore) {
         checkedMap.clear()
         cartItemsInStore.forEach { item ->
-            checkedMap[item.productId] = true
+            checkedMap[item.productId] = false    // ★ デフォルトは未チェック
         }
     }
 
@@ -138,9 +138,10 @@ fun RouteScreen(
                             return@Button
                         }
 
-                        val checkedItems = cartItemsInStore.filter { checkedMap[it.productId] == true }
+                        val checkedItems =
+                            cartItemsInStore.filter { checkedMap[it.productId] == true }
                         if (checkedItems.isEmpty()) {
-                            dialogMessage = "購入する商品が選択されていません。"
+                            navController.popBackStack()
                             return@Button
                         }
 
@@ -173,14 +174,17 @@ fun RouteScreen(
                                         orderedAt = LocalDateTime.now()
                                     )
                                     // カートから削除
-                                    val checkedIds = checkedItems.map { it.productId }.toSet()
+                                    val checkedIds =
+                                        checkedItems.map { it.productId }.toSet()
                                     cartViewModel.removeCheckedItems(checkedIds)
 
                                     isSending = false
-                                    dialogMessage = "注文を登録しました。（注文ID: ${res.order_id ?: "-"}）"
+                                    // ★ 成功時：ダイアログは出さず、そのまま前の画面へ戻る
+                                    navController.popBackStack()
                                 } else {
                                     isSending = false
-                                    dialogMessage = res.message ?: "注文登録に失敗しました。"
+                                    dialogMessage =
+                                        res.message ?: "注文登録に失敗しました。"
                                 }
                             } catch (e: Exception) {
                                 isSending = false
@@ -211,7 +215,7 @@ fun RouteScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(4f), // 全体のうち 3/5 程度を地図
+                    .weight(4f), // 全体のうち大部分を地図
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Box(
@@ -258,7 +262,10 @@ fun RouteScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(
+                                    horizontal = 10.dp,
+                                    vertical = 4.dp
+                                ),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // 左矢印（先頭以外）
@@ -267,7 +274,8 @@ fun RouteScreen(
                                         onClick = {
                                             val currentIndex = userAreaOrder.indexOf(id)
                                             if (currentIndex > 0) {
-                                                val prev = userAreaOrder[currentIndex - 1]
+                                                val prev =
+                                                    userAreaOrder[currentIndex - 1]
                                                 userAreaOrder[currentIndex - 1] = id
                                                 userAreaOrder[currentIndex] = prev
                                             }
@@ -289,7 +297,8 @@ fun RouteScreen(
                                         onClick = {
                                             val currentIndex = userAreaOrder.indexOf(id)
                                             if (currentIndex >= 0 && currentIndex < userAreaOrder.size - 1) {
-                                                val next = userAreaOrder[currentIndex + 1]
+                                                val next =
+                                                    userAreaOrder[currentIndex + 1]
                                                 userAreaOrder[currentIndex + 1] = id
                                                 userAreaOrder[currentIndex] = next
                                             }
@@ -328,7 +337,7 @@ fun RouteScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     cartItemsInStore.forEach { item ->
-                        val checked = checkedMap[item.productId] ?: true
+                        val checked = checkedMap[item.productId] ?: false
 
                         Card(
                             modifier = Modifier
@@ -380,7 +389,7 @@ fun RouteScreen(
         }
     }
 
-    // ---------------- 結果ダイアログ ----------------
+    // ---------------- エラーダイアログ ----------------
     if (dialogMessage != null) {
         AlertDialog(
             onDismissRequest = {
@@ -391,12 +400,8 @@ fun RouteScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val msg = dialogMessage
+                        // ★ エラーの場合のみ使うので、閉じるだけ
                         dialogMessage = null
-                        // 成功メッセージだった場合だけ前の画面へ戻る
-                        if (msg != null && msg.startsWith("注文を登録しました")) {
-                            navController.popBackStack()
-                        }
                     }
                 ) {
                     Text("OK")

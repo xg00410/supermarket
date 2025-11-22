@@ -78,18 +78,24 @@ class CartViewModel : ViewModel() {
     }
 
     fun increaseQuantity(productId: Int) {
-        _cartItems.find { it.productId == productId }?.let { item ->
-            item.quantity++
+        // ★ compose の再描画が行われるように、要素を copy して差し替える
+        val index = _cartItems.indexOfFirst { it.productId == productId }
+        if (index != -1) {
+            val current = _cartItems[index]
+            _cartItems[index] = current.copy(quantity = current.quantity + 1)
         }
     }
 
     fun decreaseQuantity(productId: Int) {
-        _cartItems.find { it.productId == productId }?.let { item ->
-            if (item.quantity > 1) {
-                item.quantity--
+        val index = _cartItems.indexOfFirst { it.productId == productId }
+        if (index != -1) {
+            val current = _cartItems[index]
+            if (current.quantity > 1) {
+                _cartItems[index] = current.copy(quantity = current.quantity - 1)
             }
         }
     }
+
 
     fun removeItem(productId: Int) {
         _cartItems.removeAll { it.productId == productId }

@@ -96,9 +96,7 @@ fun CartScreen(
             } else {
 
                 // 店舗ごとにグループ化
-                val groupedByStore = remember(cartItems) {
-                    cartItems.groupBy { it.storeId to it.storeName }
-                }
+                val groupedByStore = cartItems.groupBy { it.storeId to it.storeName }
 
                 // 商品一覧
                 LazyColumn(
