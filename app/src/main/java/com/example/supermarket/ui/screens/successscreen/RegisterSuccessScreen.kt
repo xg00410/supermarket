@@ -1,41 +1,28 @@
 // =========================================================
 // File: RegisterSuccessScreen.kt
-// 設計書ID: result_register
-// 画面名: 新規登録成功画面
+// 画面名: 新規登録 成功画面
 // 役割:
-//   - 登録成功を知らせる。
-//   - 5秒後にログイン画面へ自動遷移。
+//   - ResultTemplateScreen を使用して成功を表示
+//   - 5秒後に自動でログイン画面へ遷移する
 // =========================================================
 
-package com.example.supermarket.ui.screens.successscreen
+package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavController
+import com.example.supermarket.ui.Routes
+import com.example.supermarket.ui.components.ResultTemplateScreen
 
 @Composable
-fun RegisterSuccessScreen(
-    onBackToLogin: () -> Unit
-) {
-    LaunchedEffect(Unit) {
-        delay(5000)
-        onBackToLogin()
-    }
+fun RegisterSuccessScreen(navController: NavController) {
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("登録が完了しました！", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("5秒後にログイン画面へ戻ります。")
+    ResultTemplateScreen(
+        titleText = "登録完了",
+        buttonText = "ログインへ",   // UIには表示されないが、パラメータは保持
+        onButtonClick = {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(Routes.MAIN) { inclusive = false }
+            }
         }
-    }
+    )
 }

@@ -5,8 +5,6 @@
 // 役割:
 //   - カート内商品の情報（店舗ID／商品画像／数量など）を保持するモデル。
 //   - 店舗ごとにグループ化し、list2（管理画面）で管理できるようにする。
-// 更新者: 郭
-// 更新日: 2025-11-18
 // =========================================================
 
 package com.example.supermarket.models
@@ -15,17 +13,15 @@ import androidx.annotation.DrawableRes
 
 /**
  * CartItem
- * 🇯🇵 カートに入っている商品データ（店舗情報つき）
- * 🇨🇳 购物车中的商品数据（含店铺信息）
+ * カートに入っている商品データ（店舗情報つき）
  */
 data class CartItem(
-    val productId: Int,
-    val storeId: String,
-    val storeName: String,
-    val name: String,
-    val category: String,
-    val price: Double,
-    var quantity: Int,
-    val imageRes: Int?,
-    var isChecked: Boolean = false
+    val productId: Int,      // 商品ID
+    val storeId: String,     // 店舗ID
+    val storeName: String,   // 店舗名
+    val name: String,        // 商品名
+    val category: String,    // カテゴリ
+    val price: Double,       // 単価
+    var quantity: Int,       // 数量
+    @DrawableRes val imageRes: Int?   // 商品画像（null の場合はダミー画像を利用）
 )

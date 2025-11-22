@@ -4,60 +4,61 @@
 // 画面名: ログイン画面
 // 役割:
 //   - ユーザーIDとパスワードを入力。
-//   - 「ログイン」ボタンでログイン成功画面へ遷移。
-//   - 「パスワードをお忘れの方」から FindPassword へ。
-//   - 「新規登録」から RegisterScreen へ。
+//   - PHP(login.php) と連携し、成功時はセッションを保持して遷移。
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.data.UserSession
+import com.example.supermarket.models.LoginBody
+import com.example.supermarket.net.ApiClient
+import com.example.supermarket.net.ApiService
 import com.example.supermarket.ui.Routes
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(
-    navController: NavController
-) {
+fun LoginScreen(navController: NavController) {
+
     var userId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    var errorMessage by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    val api = remember { ApiClient.retrofit.create(ApiService::class.java) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("ログイン") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
-                    }
-                }
-            )
+            CenterAlignedTopAppBar(title = { Text("ログイン") })
         }
     ) { padding ->
-
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             OutlinedTextField(
                 value = userId,
                 onValueChange = { userId = it },
                 label = { Text("ユーザーID") },
-                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -65,29 +66,67 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("パスワード") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation()
             )
 
-            if (errorMessage.isNotEmpty()) {
+            if (errorMessage != null) {
                 Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
             Button(
                 onClick = {
                     if (userId.isBlank() || password.isBlank()) {
-                        errorMessage = "すべて入力してください。"
-                    } else {
-                        // ※ 本来はAPI認証
-                        navController.navigate(Routes.LOGIN_SUCCESS)
+                        errorMessage = "ユーザーIDとパスワードを入力してください。"
+                        return@Button
+                    }
+
+                    isLoading = true
+                    errorMessage = null
+
+                    scope.launch {
+                        try {
+                            val res = api.login(LoginBody(userId, password))
+                            if (res.status == "ok") {
+                                // ★ セッションに保存
+                                UserSession.userId = res.user_id
+                                UserSession.userCode = res.user_code ?: userId
+                                UserSession.userName = res.name ?: userId
+                                UserSession.phone = res.phone
+                                UserSession.email = res.email
+
+                                isLoading = false
+                                navController.navigate(Routes.LOGIN_SUCCESS) {
+                                    popUpTo(Routes.LOGIN) { inclusive = true }
+                                }
+                            } else {
+                                isLoading = false
+                                errorMessage = res.message ?: "ログインに失敗しました。"
+                            }
+                        } catch (e: Exception) {
+                            isLoading = false
+                            errorMessage = "通信エラーが発生しました。"
+                        }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
             ) {
-                Text("ログイン")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text("ログイン")
+                }
             }
 
             TextButton(

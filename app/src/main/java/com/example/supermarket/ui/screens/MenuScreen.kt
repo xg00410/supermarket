@@ -32,12 +32,6 @@ import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
 
-
-
-
-
-
-
 // 商品確定時の動作種別
 private enum class MenuCommitAction {
     ADD_TO_CART,     // カートに入れる
@@ -52,10 +46,7 @@ fun MenuScreen(
     storeId: String
 ) {
     // カートの状態（この店舗の商品のみ抽出）
-
     val cartItemsInThisStore = cartViewModel.cartItems.filter { item -> item.storeId == storeId }
-
-
 
     // 店舗情報（店名表示用）
     val store = remember(storeId) {
@@ -67,13 +58,26 @@ fun MenuScreen(
         mutableStateOf<List<Product>>(emptyList())
     }
 
+    // 実際に「DB結果を使っているかどうか」を示すフラグ
+    var isDbResult by remember(storeId) {
+        mutableStateOf(false)
+    }
+
+    // DBモード時のエラー内容を画面下に表示するためのメッセージ
+    var dbErrorMessage by remember(storeId) {
+        mutableStateOf<String?>(null)
+    }
+
     LaunchedEffect(storeId, StoreDataRepository.useDatabaseMode) {
-        allProducts = if (StoreDataRepository.useDatabaseMode) {
+        if (StoreDataRepository.useDatabaseMode) {
+            // DBモード：まずは API を試す
             try {
                 val api = ApiClient.retrofit.create(ApiService::class.java)
                 val res = api.getProductsByStore(storeId)
+
                 if (res.status == "ok" && res.data != null) {
-                    res.data.map { dto ->
+                    // DB からのデータを使用
+                    allProducts = res.data.map { dto ->
                         Product(
                             productId = dto.product_id,
                             storeId = storeId,
@@ -86,22 +90,27 @@ fun MenuScreen(
                                 ?: com.example.supermarket.R.drawable.logo
                         )
                     }
+                    isDbResult = true
+                    dbErrorMessage = null
                 } else {
                     // ステータス異常 → ダミーデータへフォールバック
-                    StoreDataRepository.getProductsByStore(storeId)
+                    allProducts = StoreDataRepository.getProductsByStore(storeId)
+                    isDbResult = false
+                    dbErrorMessage = "APIステータス異常: status=${res.status}, message=${res.message ?: "不明"}"
                 }
             } catch (e: Exception) {
                 // 通信エラー → ダミーデータへフォールバック
-                StoreDataRepository.getProductsByStore(storeId)
+                allProducts = StoreDataRepository.getProductsByStore(storeId)
+                isDbResult = false
+                dbErrorMessage = "通信エラー: ${e.localizedMessage}"
             }
         } else {
             // ダミーモード：従来通りリポジトリから取得
-            StoreDataRepository.getProductsByStore(storeId)
+            allProducts = StoreDataRepository.getProductsByStore(storeId)
+            isDbResult = false
+            dbErrorMessage = null
         }
     }
-
-    // 8カテゴリ（設計書固定）
-
 
     // 8カテゴリ（設計書固定）
     val categories = listOf(
@@ -181,8 +190,7 @@ fun MenuScreen(
             CenterAlignedTopAppBar(
                 title = {
                     // 店舗名をタイトルに表示
-                    Text(text = store?.storeName?: "商品一覧")
-
+                    Text(text = store?.storeName ?: "商品一覧")
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -199,6 +207,30 @@ fun MenuScreen(
                 .padding(12.dp)
                 .fillMaxSize()
         ) {
+            // ★ 追加：現在のデータ取得状態を表示
+            Text(
+                text = when {
+                    StoreDataRepository.useDatabaseMode && isDbResult ->
+                        "現在：DB（PHP / MySQL）から商品データを取得しています。"
+                    StoreDataRepository.useDatabaseMode && !isDbResult ->
+                        "現在：DBモードですが、取得に失敗したためダミーデータを表示しています。"
+                    else ->
+                        "現在：ダミーデータモードです。"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            // ★ 追加：エラー詳細（あれば表示）
+            dbErrorMessage?.let { msg ->
+                Text(
+                    text = "エラー詳細: $msg",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
             // カテゴリタブ
             ScrollableTabRow(selectedTabIndex = categories.indexOf(selectedCategory)) {
@@ -278,12 +310,9 @@ fun MenuScreen(
                     },
                     modifier = Modifier.weight(1f),
                     enabled = (tempTotal > 0.0) || cartItemsInThisStore.isNotEmpty()
-
-
                 ) {
                     Text("最短ルートへ")
                 }
-
             }
         }
     }

@@ -3,7 +3,8 @@
 // 設計書ID: findpwd
 // 画面名: パスワード再設定（ID + メール入力）
 // 役割:
-//   - ユーザーIDとメールを入力し、本人確認として次の画面へ進む。
+//   - ユーザーIDとメールを入力し、次の画面へ進む。
+//   - この画面ではDB更新は行わず、入力値を保持するだけ。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.supermarket.data.PasswordResetState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,12 +26,12 @@ fun FindPasswordScreen(
 ) {
     var userId by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("パスワード再設定") },
+                title = { Text("パスワード再設定（確認）") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
@@ -43,8 +45,8 @@ fun FindPasswordScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
             OutlinedTextField(
@@ -61,17 +63,27 @@ fun FindPasswordScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (errorMessage.isNotEmpty()) {
-                Text(errorMessage, color = MaterialTheme.colorScheme.error)
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
+
+            Spacer(Modifier.height(8.dp))
 
             Button(
                 onClick = {
                     if (userId.isBlank() || email.isBlank()) {
                         errorMessage = "すべて入力してください。"
-                    } else {
-                        onNext()
+                        return@Button
                     }
+                    // ★ 状態に保持して次画面へ
+                    PasswordResetState.userCode = userId
+                    PasswordResetState.email = email
+                    errorMessage = null
+                    onNext()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

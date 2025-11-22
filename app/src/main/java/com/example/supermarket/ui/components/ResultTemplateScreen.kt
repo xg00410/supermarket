@@ -1,78 +1,62 @@
 // =========================================================
 // File: ResultTemplateScreen.kt
-// 概要: 成功・失敗などの結果表示用テンプレート画面。
-//設計書ID: なし（部品）
-//画面名: 成功メッセージ共通画面
-// 更新者: 郭
-// 更新日: 2025-11-17
+// 画面名: 成功表示テンプレート
+// 役割:
+//   - titleText / buttonText / onButtonClick など
+//     元の引数を全て保持しつつ、5 秒後に自動遷移する。
+//   - 画面上にはボタンを表示しない。
 // =========================================================
 
 package com.example.supermarket.ui.components
 
-
-
-/**
- * ✅ ResultTemplateScreen.kt
- * -----------------------------------------------------------
- * 🇯🇵 成功・結果表示画面の共通テンプレート
- * 🇨🇳 注册成功、登录成功、密码修改成功等通用结果页模板
- * -----------------------------------------------------------
- */
-
-
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.supermarket.R   // ★ 自分の R を使う！ここが重要
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultTemplateScreen(
     titleText: String,
-    buttonText: String,
-    onButtonClick: () -> Unit
+    buttonText: String,             // ← 保留だけど画面に表示しない
+    onButtonClick: () -> Unit       // ← 5 秒後にこれを呼ぶ
 ) {
+    // ★ 5 秒後に自動遷移
+    LaunchedEffect(Unit) {
+        delay(5000)
+        onButtonClick()
+    }
+
     Scaffold { padding ->
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.Center
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
 
-                // ★ あなたの logo を使えるようになった！
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "Result Icon",
-                    modifier = Modifier.size(100.dp)
-                )
+            // タイトル
+            Text(
+                text = titleText,
+                style = MaterialTheme.typography.headlineSmall
+            )
 
-                Text(
-                    text = titleText,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
-                )
+            Spacer(Modifier.height(20.dp))
 
-                Button(
-                    onClick = onButtonClick,
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(50.dp)
-                ) {
-                    Text(buttonText, fontSize = 16.sp)
-                }
-            }
+            // 案内
+            Text(
+                text = "5秒後に自動的に次の画面へ移動します…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // 注意：ここにはもうボタンを置かない
+            // （buttonText は保持するが UI には表示しない）
         }
     }
 }

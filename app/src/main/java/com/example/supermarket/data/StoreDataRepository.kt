@@ -32,7 +32,7 @@ object StoreDataRepository {
         //   false: ダミーデータ（ローカルスタブ）
         //   true : DB + PHP(API) 経由で取得
         // -----------------------------------------------------
-        var useDatabaseMode: Boolean = false
+        var useDatabaseMode: Boolean = true
 
 
         // -----------------------------------------------------

@@ -7,7 +7,7 @@
 //   3. 所有进入菜单的路径都同步更新 SelectedStoreState
 // =========================================================
 
-package com.example.supermarket.ui.theme
+package com.example.supermarket.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,9 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.screens.*
-import com.example.supermarket.ui.screens.successscreen.LoginSuccessScreen
-import com.example.supermarket.ui.screens.successscreen.PasswordResetSuccessScreen
-import com.example.supermarket.ui.screens.successscreen.RegisterSuccessScreen
+
 import com.example.supermarket.viewmodel.CartViewModel
 import com.example.supermarket.data.SelectedStoreState   // ★ 新增：记录当前店铺
 
@@ -44,26 +42,21 @@ fun AppNavHost(
 
         composable(Routes.LOGIN_SUCCESS) {
             LoginSuccessScreen(
-                onGoStoreSelect = {
-                    navController.navigate(Routes.STORE_SELECT) {
-                        popUpTo(Routes.MAIN) { inclusive = false }
-                    }
-                }
+                navController = navController
             )
         }
 
+
         composable(Routes.REGISTER) {
-            RegisterScreen(
-                onBack = { navController.popBackStack() },
-                onRegisterSuccess = { navController.navigate(Routes.REGISTER_SUCCESS) }
-            )
+            RegisterScreen(navController)
         }
 
         composable(Routes.REGISTER_SUCCESS) {
             RegisterSuccessScreen(
-                onBackToLogin = { navController.navigate(Routes.LOGIN) }
+                navController = navController
             )
         }
+
 
         composable(Routes.FIND_PASSWORD) {
             FindPasswordScreen(
@@ -81,9 +74,10 @@ fun AppNavHost(
 
         composable(Routes.PASSWORD_RESET_SUCCESS) {
             PasswordResetSuccessScreen(
-                onBackToLogin = { navController.navigate(Routes.LOGIN) }
+                navController = navController
             )
         }
+
 
         // ------------------------
         // 店铺选择 3 层级
@@ -196,7 +190,10 @@ fun AppNavHost(
                 onEdit = { navController.navigate(Routes.PROFILE_EDIT) },
                 onOrderHistory = { navController.navigate(Routes.ORDER_HISTORY) },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
-                onTerms = { navController.navigate(Routes.TERMS) }
+                onTerms = { navController.navigate(Routes.TERMS) },
+                onLogout = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.MAIN) { inclusive = true }}}
             )
         }
 

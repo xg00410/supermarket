@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +44,7 @@ fun CartScreen(
     navController: NavController,
     cartViewModel: CartViewModel
 ) {
+
     val cartItems = cartViewModel.cartItems
 
     // ★在庫超過チェック用の状態（ダイアログ）

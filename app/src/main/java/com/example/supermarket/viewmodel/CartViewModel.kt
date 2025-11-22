@@ -18,6 +18,10 @@ class CartViewModel : ViewModel() {
     // 商品ID → 選択数量
     // ==============================
     val tempSelectedItems = mutableStateMapOf<Int, Int>()
+
+    // ---------------- 手動エリア順序（カテゴリ名のリスト） ----------------
+    val userAreaOrder = mutableStateListOf<String>()
+
     // カート内の商品一覧
     private val _cartItems = mutableStateListOf<CartItem>()
     val cartItems: List<CartItem> get() = _cartItems
@@ -37,6 +41,7 @@ class CartViewModel : ViewModel() {
     // 「すべて選択」チェックボックスの状態
     private var _selectAll by mutableStateOf(false)
     val isSelectAll: Boolean get() = _selectAll
+
 
     // -------------------------
     // カート操作
@@ -240,12 +245,31 @@ class CartViewModel : ViewModel() {
 
         syncSelectionState()
     }
-    // List2Screen 用：删除已选中的商品
+    /**
+     * list2 画面から呼び出し：
+     * 現在チェックされている商品を一括削除する。
+     *
+     * - _selectedItemIds のうち true になっている productId を対象とする。
+     * - 削除後は選択状態マップも同期し、店舗単位・全選択フラグも更新する。
+     */
     fun deleteSelectedItems() {
-        val checkedIds = _cartItems.filter { it.isChecked }.map { it.productId }.toSet()
-        if (checkedIds.isNotEmpty()) {
-            _cartItems.removeAll { it.productId in checkedIds }
-        }
+        // チェックされている商品IDの集合を取得
+        val checkedIds: Set<Int> = _selectedItemIds
+            .filterValues { it }
+            .keys
+
+        if (checkedIds.isEmpty()) return
+
+        // カート本体から削除
+        _cartItems.removeAll { it.productId in checkedIds }
+
+        // 選択状態マップからもキーを削除
+        checkedIds.forEach { _selectedItemIds.remove(it) }
+
+        // 店舗単位のチェック状態・全選択フラグを再計算
+        syncSelectionState()
     }
+
+
 
 }
