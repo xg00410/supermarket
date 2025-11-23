@@ -48,29 +48,11 @@ fun SettingsScreen(
 
             Text("データ取得モード", style = MaterialTheme.typography.titleMedium)
 
-            // DBモードとダミーモードの切り替え
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("DB を使用する")
-                Switch(
-                    checked = useDbMode,
-                    onCheckedChange = { checked ->
-                        useDbMode = checked
-                        StoreDataRepository.useDatabaseMode = checked
-                    }
-                )
-            }
+// 🇯🇵 DBモード固定：切替スイッチは表示しない
+// 🇨🇳 固定使用 DB 模式：不再显示切换开关
 
             Text(
-                text = if (useDbMode) {
-                    "現在：DBモード（PHP / MySQL からデータを取得します）"
-                } else {
-                    "現在：ダミーデータモード（開発用のテストデータを使用します）"
-                },
+                text = "現在：DBモード（PHP / MySQL からデータを取得します）",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
