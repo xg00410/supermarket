@@ -189,8 +189,6 @@ fun AppNavHost(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(Routes.PROFILE_EDIT) },
                 onOrderHistory = { navController.navigate(Routes.ORDER_HISTORY) },
-                onSettings = { navController.navigate(Routes.SETTINGS) },
-                onTerms = { navController.navigate(Routes.TERMS) },
                 onLogout = {
                     navController.navigate(Routes.MAIN) {
                         popUpTo(Routes.MAIN) { inclusive = true }}}
@@ -204,8 +202,6 @@ fun AppNavHost(
             )
         }
 
-        composable(Routes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
-        composable(Routes.TERMS) { TermsScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.ORDER_HISTORY) { OrderHistoryScreen(navController, cartViewModel) }
 
         // ------------------------

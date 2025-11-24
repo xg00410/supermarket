@@ -9,6 +9,7 @@
 //   - 商品ごとに「一時選択数量」を保持（tempQuantities）。
 //   - 下部に「カートに入れる」「最短ルートへ」ボタン。
 //   - 在庫を超える数量が選択されている場合はダイアログで確認。
+//   - ★ 商品データは PHP / MySQL からのみ取得（ダミーデータは廃止）。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -53,14 +54,9 @@ fun MenuScreen(
         StoreDataRepository.getStoreById(storeId)
     }
 
-    // この店舗の全商品（ダミー or DB から取得）
+    // この店舗の全商品（DB から取得）
     var allProducts by remember(storeId) {
         mutableStateOf<List<Product>>(emptyList())
-    }
-
-    // 実際に「DB結果を使っているかどうか」を示すフラグ
-    var isDbResult by remember(storeId) {
-        mutableStateOf(false)
     }
 
     // DBモード時のエラー内容を画面下に表示するためのメッセージ
@@ -68,47 +64,38 @@ fun MenuScreen(
         mutableStateOf<String?>(null)
     }
 
-    LaunchedEffect(storeId, StoreDataRepository.useDatabaseMode) {
-        if (StoreDataRepository.useDatabaseMode) {
-            // DBモード：まずは API を試す
-            try {
-                val api = ApiClient.retrofit.create(ApiService::class.java)
-                val res = api.getProductsByStore(storeId)
+    // ---------------- DB から商品取得（ダミーデータへのフォールバックは廃止） ----------------
+    LaunchedEffect(storeId) {
+        try {
+            val api = ApiClient.retrofit.create(ApiService::class.java)
+            val res = api.getProductsByStore(storeId)
 
-                if (res.status == "ok" && res.data != null) {
-                    // DB からのデータを使用
-                    allProducts = res.data.map { dto ->
-                        Product(
-                            productId = dto.product_id,
-                            storeId = storeId,
-                            storeName = store?.storeName ?: "",
-                            name = dto.name,
-                            category = dto.category ?: "その他",
-                            price = dto.price,
-                            stock = dto.stock ?: 0,
-                            imageRes = store?.imageRes
-                                ?: com.example.supermarket.R.drawable.logo
-                        )
-                    }
-                    isDbResult = true
-                    dbErrorMessage = null
-                } else {
-                    // ステータス異常 → ダミーデータへフォールバック
-                    allProducts = StoreDataRepository.getProductsByStore(storeId)
-                    isDbResult = false
-                    dbErrorMessage = "APIステータス異常: status=${res.status}, message=${res.message ?: "不明"}"
+            if (res.status == "ok" && res.data != null) {
+                // DB からのデータを使用
+                allProducts = res.data.map { dto ->
+                    Product(
+                        productId = dto.product_id,
+                        storeId = storeId,
+                        storeName = store?.storeName ?: "",
+                        name = dto.name,
+                        category = dto.category ?: "その他",
+                        price = dto.price,
+                        stock = dto.stock ?: 0,
+                        imageRes = store?.imageRes
+                            ?: com.example.supermarket.R.drawable.logo
+                    )
                 }
-            } catch (e: Exception) {
-                // 通信エラー → ダミーデータへフォールバック
-                allProducts = StoreDataRepository.getProductsByStore(storeId)
-                isDbResult = false
-                dbErrorMessage = "通信エラー: ${e.localizedMessage}"
+                // ★ CartScreen 等で使うためにキャッシュ
+                StoreDataRepository.latestDbProducts[storeId] = allProducts
+                dbErrorMessage = null
+            } else {
+                allProducts = emptyList()
+                dbErrorMessage =
+                    "APIステータス異常: status=${res.status}, message=${res.message ?: "不明"}"
             }
-        } else {
-            // ダミーモード：従来通りリポジトリから取得
-            allProducts = StoreDataRepository.getProductsByStore(storeId)
-            isDbResult = false
-            dbErrorMessage = null
+        } catch (e: Exception) {
+            allProducts = emptyList()
+            dbErrorMessage = "通信エラー: ${e.localizedMessage}"
         }
     }
 
@@ -163,7 +150,6 @@ fun MenuScreen(
     fun handleCommitRequest(action: MenuCommitAction) {
         val selected = allProducts.filter { (tempQuantities[it.productId] ?: 0) > 0 }
         if (selected.isEmpty()) {
-            // 何も選んでいなければ何もしない（必要ならメッセージ表示も可）
             return
         }
 
@@ -207,30 +193,16 @@ fun MenuScreen(
                 .padding(12.dp)
                 .fillMaxSize()
         ) {
-            // ★ 追加：現在のデータ取得状態を表示
-            Text(
-                text = when {
-                    StoreDataRepository.useDatabaseMode && isDbResult ->
-                        "現在：DB（PHP / MySQL）から商品データを取得しています。"
-                    StoreDataRepository.useDatabaseMode && !isDbResult ->
-                        "現在：DBモードですが、取得に失敗したためダミーデータを表示しています。"
-                    else ->
-                        "現在：ダミーデータモードです。"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            // ★ 追加：エラー詳細（あれば表示）
+            // ★ 商品取得エラーメッセージ（必要な場合のみ表示）
             dbErrorMessage?.let { msg ->
                 Text(
-                    text = "エラー詳細: $msg",
+                    text = msg,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
+
 
             // カテゴリタブ
             ScrollableTabRow(selectedTabIndex = categories.indexOf(selectedCategory)) {
@@ -301,10 +273,8 @@ fun MenuScreen(
                 Button(
                     onClick = {
                         if (tempTotal > 0.0) {
-                            // まだ一時選択中の商品がある → 在庫チェックしてからカート追加＋ルートへ
                             handleCommitRequest(MenuCommitAction.GO_ROUTE)
                         } else if (cartItemsInThisStore.isNotEmpty()) {
-                            // 一時選択は空だが、この店舗のカート商品は存在する → そのままルート画面へ
                             navController.navigate("${Routes.ROUTE}/$storeId")
                         }
                     },

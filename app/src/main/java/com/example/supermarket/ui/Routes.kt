@@ -52,8 +52,6 @@ object Routes {
     // ------------------------
     const val PROFILE = "profile"                    // マイページトップ
     const val PROFILE_EDIT = "profile_edit"          // 会員情報編集
-    const val SETTINGS = "settings"                  // 設定
-    const val TERMS = "terms"                        // 利用規約
     const val ORDER_HISTORY = "order_history"        // 購入履歴一覧
 
     // ------------------------

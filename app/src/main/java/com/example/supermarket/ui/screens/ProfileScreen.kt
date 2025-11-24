@@ -4,15 +4,19 @@
 // 画面名: マイページ
 // 役割:
 //   - ログイン中ユーザーの情報表示
-//   - 編集 / 履歴 / 設定 / 利用規約
-//   - ログアウト機能（確認ダイアログ付）
+//   - 編集 / 履歴 / ログアウト
+//   - ★ 設定ボタン削除済み
+//   - ★ 利用規約ボタン削除済み
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -25,8 +29,6 @@ fun ProfileScreen(
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onOrderHistory: () -> Unit,
-    onSettings: () -> Unit,
-    onTerms: () -> Unit,
     onLogout: () -> Unit
 ) {
     val userName = UserSession.userName ?: "未設定"
@@ -90,23 +92,8 @@ fun ProfileScreen(
                 Text("購入履歴")
             }
 
-            Button(
-                onClick = onSettings,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("設定")
-            }
-
-            Button(
-                onClick = onTerms,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Description, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("利用規約")
-            }
+            // ★ 設定ボタン削除済み
+            // ★ 利用規約ボタン削除済み
 
             Spacer(modifier = Modifier.weight(1f))
 

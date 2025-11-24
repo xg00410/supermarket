@@ -7,11 +7,8 @@
 //   - 削除ボタン（ゴミ箱）。
 //   - 合計金額の表示。
 //   - 店舗ごとに商品をグループ化して表示。
-//   - 各商品の在庫数を表示（ゴミ箱ボタンの左側）。
-//   - 各店舗ブロックの下に「最短ルートへ」ボタンを配置し，
-//     その店舗のルート画面へ直接遷移する。
-//   - 画面下部の「どの店舗か分からない」全体用ルートボタンは削除。
-//   - ★在庫数を超えている場合，「最短ルートへ」押下時に確認ダイアログを表示。
+//   - 在庫数表示（各商品の右側）。
+//   - ★在庫数を超えた場合は「最短ルートへ」押下時に確認ダイアログ表示。
 // =========================================================
 
 package com.example.supermarket.ui.screens
@@ -25,7 +22,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +43,7 @@ fun CartScreen(
 
     val cartItems = cartViewModel.cartItems
 
-    // ★在庫超過チェック用の状態（ダイアログ）
+    // ★ 在庫超過ダイアログ用の状態
     val overStockMessageState = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
     val pendingStoreIdState = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
@@ -58,7 +54,6 @@ fun CartScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            // 戻る → 店舗選択画面へ
                             navController.navigate(Routes.STORE_SELECT) {
                                 popUpTo(Routes.STORE_SELECT) { inclusive = false }
                             }
@@ -68,7 +63,7 @@ fun CartScreen(
                     }
                 },
                 actions = {
-                    // 管理画面（list2）への遷移ボタン
+                    // list2 管理画面へ
                     TextButton(onClick = { navController.navigate(Routes.CART_MANAGE) }) {
                         Text("管理")
                     }
@@ -95,19 +90,19 @@ fun CartScreen(
                 }
             } else {
 
-                // 店舗ごとにグループ化
+                // ★ 店舗ごとにグループ化
                 val groupedByStore = cartItems.groupBy { it.storeId to it.storeName }
 
-                // 商品一覧
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     groupedByStore.forEach { (storeKey, itemsInStore) ->
+
                         val storeId = storeKey.first
                         val storeName = storeKey.second
 
-                        // 店舗名ヘッダー
+                        // ★ 店舗名ヘッダー
                         item(key = "header_${storeId}") {
                             Text(
                                 text = storeName,
@@ -116,14 +111,13 @@ fun CartScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                         }
 
-                        // 店舗ごとの商品行
+                        // ★ 店舗内の商品一覧
                         items(itemsInStore, key = { it.productId }) { item ->
 
-                            // 在庫数を Product から取得
+                            // ★ 在庫は DBキャッシュから参照
                             val stock = remember(item.storeId, item.productId) {
-                                StoreDataRepository
-                                    .getProductsByStore(item.storeId)
-                                    .find { it.productId == item.productId }
+                                StoreDataRepository.latestDbProducts[item.storeId]
+                                    ?.find { it.productId == item.productId }
                                     ?.stock ?: 0
                             }
 
@@ -136,7 +130,8 @@ fun CartScreen(
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // 左：画像（商品に画像があればそれを使用，なければロゴ）
+
+                                    // 左：画像
                                     Image(
                                         painter = painterResource(
                                             id = item.imageRes ?: R.drawable.logo
@@ -163,11 +158,12 @@ fun CartScreen(
                                         Text("小計：${(item.price * item.quantity).toInt()} 円")
                                     }
 
-                                    // 右：数量コントロール ＋ 在庫 ＋ 削除ボタン
+                                    // 右：数量変更 ＋ 在庫表示 ＋ 削除
                                     Column(
                                         horizontalAlignment = Alignment.End,
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
+
                                         // 数量（－ 数量 ＋）
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
@@ -197,7 +193,7 @@ fun CartScreen(
                                             }
                                         }
 
-                                        // 在庫表示＋削除ボタン（在庫が左、ゴミ箱が右）
+                                        // 在庫＋削除
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -220,21 +216,22 @@ fun CartScreen(
                             }
                         }
 
-                        // 店舗ごとの「最短ルートへ」ボタン
+                        // ★ 店舗ごとの「最短ルートへ」ボタン
                         item(key = "route_${storeId}") {
                             Spacer(modifier = Modifier.height(4.dp))
+
                             Button(
                                 onClick = {
-                                    // ★この店舗内で在庫超過している商品があるかどうかチェック
+                                    // 🇯🇵 在庫チェックは DBキャッシュを参照
+                                    // 🇨🇳 库存检查统一用 DB 缓存（latestDbProducts）
+
                                     val over = itemsInStore.mapNotNull { cartItem ->
-                                        val product = StoreDataRepository
-                                            .getProductsByStore(cartItem.storeId)
-                                            .find { it.productId == cartItem.productId }
+                                        val product = StoreDataRepository.latestDbProducts[cartItem.storeId]
+                                            ?.find { it.productId == cartItem.productId }
+
                                         if (product != null && cartItem.quantity > product.stock) {
                                             product to cartItem.quantity
-                                        } else {
-                                            null
-                                        }
+                                        } else null
                                     }
 
                                     if (over.isNotEmpty()) {
@@ -244,8 +241,8 @@ fun CartScreen(
                                                     "例：${product.name} 在庫：${product.stock} / カート数量：$qty\n\n" +
                                                     "このまま続行しますか？"
                                         pendingStoreIdState.value = storeId
+
                                     } else {
-                                        // 在庫超過なし → そのままルート画面へ
                                         navController.navigate("${Routes.ROUTE}/$storeId")
                                     }
                                 },
@@ -253,6 +250,7 @@ fun CartScreen(
                             ) {
                                 Text("最短ルートへ")
                             }
+
                             Spacer(modifier = Modifier.height(8.dp))
                             Divider()
                             Spacer(modifier = Modifier.height(8.dp))
@@ -263,14 +261,14 @@ fun CartScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 合計金額（全店舗合計）
+            // ★ 合計金額（全店舗）
             val sum = cartViewModel.totalPrice()
             Text(
                 text = "合計：${sum.toInt()} 円",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // ★在庫超過確認ダイアログ
+            // ★ 在庫超過確認ダイアログ
             overStockMessageState.value?.let { msg ->
                 AlertDialog(
                     onDismissRequest = {
@@ -282,9 +280,9 @@ fun CartScreen(
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                val target = pendingStoreIdState.value
-                                if (target != null) {
-                                    navController.navigate("${Routes.ROUTE}/$target")
+                                val storeId = pendingStoreIdState.value
+                                if (storeId != null) {
+                                    navController.navigate("${Routes.ROUTE}/$storeId")
                                 }
                                 overStockMessageState.value = null
                                 pendingStoreIdState.value = null
