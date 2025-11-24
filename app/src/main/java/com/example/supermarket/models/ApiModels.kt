@@ -68,3 +68,87 @@ data class InsertOrderBody(
     val store_code: String,
     val items: List<OrderItem>
 )
+// =========================================================
+// 商品一覧 API 用 DTO
+// =========================================================
+
+/**
+ * 商品一覧取得 API(get_products.php) の1件分のDTO。
+ *
+ * PHP 側の JSON キーに合わせて snake_case を使用する。
+ */
+data class ProductDto(
+    val product_id: Int,
+    val name: String,
+    val category: String?,
+    val price: Double,
+    val stock: Int?
+)
+
+/**
+ * 商品一覧レスポンス。
+ */
+data class ApiProductsResponse(
+    val status: String,
+    val message: String? = null,
+    val data: List<ProductDto>?
+)
+
+// =========================================================
+// 店舗一覧 API 用 DTO
+// =========================================================
+
+/**
+ * 店舗一覧取得 API(get_stores.php) の1件分のDTO。
+ */
+data class StoreDto(
+    val store_id: String,
+    val name: String,
+    val address: String,
+    val latitude: Double?,
+    val longitude: Double?
+)
+
+/**
+ * 店舗一覧レスポンス。
+ */
+data class StoreListResponse(
+    val status: String,
+    val message: String? = null,
+    val data: List<StoreDto>?
+)
+
+// =========================================================
+// 注文履歴 API 用 DTO
+// =========================================================
+
+/**
+ * 注文履歴の明細1件分のDTO。
+ */
+data class OrderHistoryItemDto(
+    val product_id: Int,
+    val name: String,
+    val quantity: Int,
+    val price: Int
+)
+
+/**
+ * 注文履歴1件分のDTO。
+ */
+data class OrderHistoryDto(
+    val order_id: Long,
+    val store_id: String,
+    val store_name: String,
+    val ordered_at: String,
+    val total: Int,
+    val items: List<OrderHistoryItemDto>
+)
+
+/**
+ * 注文履歴一覧レスポンス。
+ */
+data class OrderHistoryListResponse(
+    val status: String,
+    val message: String? = null,
+    val data: List<OrderHistoryDto>?
+)

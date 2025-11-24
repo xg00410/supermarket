@@ -30,7 +30,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.R
-import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.viewmodel.CartViewModel
 
@@ -114,12 +113,9 @@ fun CartScreen(
                         // ★ 店舗内の商品一覧
                         items(itemsInStore, key = { it.productId }) { item ->
 
-                            // ★ 在庫は DBキャッシュから参照
-                            val stock = remember(item.storeId, item.productId) {
-                                StoreDataRepository.latestDbProducts[item.storeId]
-                                    ?.find { it.productId == item.productId }
-                                    ?.stock ?: 0
-                            }
+                            // ★ 在庫は CartItem.stock を使用（DB 取得値）
+                            val stock = item.stock
+
 
                             Card(
                                 modifier = Modifier.fillMaxWidth()
@@ -222,30 +218,25 @@ fun CartScreen(
 
                             Button(
                                 onClick = {
-                                    // 🇯🇵 在庫チェックは DBキャッシュを参照
-                                    // 🇨🇳 库存检查统一用 DB 缓存（latestDbProducts）
+                                    // 🇯🇵 在庫チェックは CartItem.stock を使用
+                                    // 🇨🇳 库存检查：直接用购物车里保存的库存
 
-                                    val over = itemsInStore.mapNotNull { cartItem ->
-                                        val product = StoreDataRepository.latestDbProducts[cartItem.storeId]
-                                            ?.find { it.productId == cartItem.productId }
-
-                                        if (product != null && cartItem.quantity > product.stock) {
-                                            product to cartItem.quantity
-                                        } else null
+                                    val over = itemsInStore.filter { cartItem ->
+                                        cartItem.quantity > cartItem.stock
                                     }
 
                                     if (over.isNotEmpty()) {
-                                        val (product, qty) = over.first()
+                                        val first = over.first()
                                         overStockMessageState.value =
                                             "選択された数量が在庫数を超えている商品があります。\n" +
-                                                    "例：${product.name} 在庫：${product.stock} / カート数量：$qty\n\n" +
+                                                    "例：${first.name} 在庫：${first.stock} / カート数量：${first.quantity}\n\n" +
                                                     "このまま続行しますか？"
                                         pendingStoreIdState.value = storeId
-
                                     } else {
                                         navController.navigate("${Routes.ROUTE}/$storeId")
                                     }
                                 },
+
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("最短ルートへ")

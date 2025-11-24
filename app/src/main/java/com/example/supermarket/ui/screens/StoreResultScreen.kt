@@ -1,5 +1,14 @@
+// =========================================================
+// File: StoreResultScreen.kt
+// 画面名: 店舗検索結果表示
+// 役割:
+//   - 検索キーワード(keyword) に一致する店舗一覧を API から取得して表示。
+//   - 住所・店舗名の部分一致でフィルタリング。
+// =========================================================
+
 package com.example.supermarket.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,48 +16,62 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.data.StoreDataRepository
-import com.example.supermarket.ui.Routes
+import com.example.supermarket.models.Store
+import com.example.supermarket.net.ApiClient
+import com.example.supermarket.net.ApiService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreResultScreen(
     navController: NavController,
-    keyword: String?,
-    prefectureId: Int?
+    keyword: String
 ) {
-    // 第一段：都道府県 or キーワードで初期リストを決定
-    val originalList = remember(keyword, prefectureId) {
-        when {
-            prefectureId != null && prefectureId > 0 ->
-                StoreDataRepository.getStoresByPrefecture(prefectureId)
-            keyword != null && keyword.isNotBlank() && keyword != "none" ->
-                StoreDataRepository.searchStores(keyword)
-            else -> emptyList()
-        }
-    }
 
-    var filterText by remember { mutableStateOf("") }
+    var storeList by remember { mutableStateOf<List<Store>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // 第二段：結果内絞り込み
-    val filteredList = remember(filterText, originalList) {
-        if (filterText.isBlank()) {
-            originalList
-        } else {
-            originalList.filter {
-                it.storeName.contains(filterText, ignoreCase = true) ||
-                        it.address.contains(filterText, ignoreCase = true)
+    LaunchedEffect(keyword) {
+        isLoading = true
+        try {
+            val api = ApiClient.retrofit.create(ApiService::class.java)
+            val res = api.getStores()
+
+            if (res.status == "ok" && res.data != null) {
+                val allStores = res.data.map { dto ->
+                    Store(
+                        storeId = dto.store_id,
+                        storeName = dto.name,
+                        address = dto.address,
+                        latitude = dto.latitude ?: 0.0,
+                        longitude = dto.longitude ?: 0.0,
+                        imageRes = null,
+                        floorMapRes = null
+                    )
+                }
+
+                storeList = allStores.filter {
+                    it.storeName.contains(keyword) ||
+                            it.address.contains(keyword)
+                }
+            } else {
+                errorMessage = res.message ?: "検索結果の取得に失敗しました。"
             }
+        } catch (e: Exception) {
+            errorMessage = "通信エラーが発生しました。"
+        } finally {
+            isLoading = false
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("店舗一覧") },
+                title = { Text("検索結果：$keyword") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
@@ -58,50 +81,64 @@ fun StoreResultScreen(
         }
     ) { padding ->
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize()
-        ) {
-            OutlinedTextField(
-                value = filterText,
-                onValueChange = { filterText = it },
-                label = { Text("結果内検索") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (filteredList.isEmpty()) {
-                Text("該当する店舗はありません。")
-                return@Column
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredList) { store ->
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                }
+            }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        onClick = {
-                            navController.navigate(
-                                Routes.STORE_DETAIL + "/" + store.storeId
-                            )
-                        }
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp)
+            storeList.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("該当する店舗が見つかりませんでした。")
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    items(storeList) { store ->
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    navController.navigate("store_detail/${store.storeId}")
+                                }
+                                .padding(16.dp)
                         ) {
-                            Text(
-                                text = store.storeName,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(text = store.address)
+                            Column {
+                                Text(store.storeName, style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(store.address, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
+
+                        Divider()
                     }
                 }
             }

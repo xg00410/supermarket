@@ -35,7 +35,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.supermarket.R
 import com.example.supermarket.data.RouteRepository
-import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.data.UserSession
 import com.example.supermarket.models.InsertOrderBody
 import com.example.supermarket.models.OrderItem
@@ -52,15 +51,20 @@ fun RouteScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
-    // ---------------- 店舗情報 ----------------
-    val store = remember(storeId) { StoreDataRepository.getStoreById(storeId) }
-
     // ---------------- 対象店舗のカート商品 ----------------
     val cartItemsInStore by remember {
         derivedStateOf {
             cartViewModel.cartItems.filter { it.storeId == storeId }
         }
     }
+
+    // ---------------- 店舗名（カート内から取得） ----------------
+    val storeName by remember {
+        derivedStateOf {
+            cartItemsInStore.firstOrNull()?.storeName ?: ""
+        }
+    }
+
 
     // ---------------- 商品ごとのチェック状態（購入するかどうか） ----------------
     val checkedMap = remember {
@@ -113,8 +117,9 @@ fun RouteScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("最短ルート (${store?.storeName ?: ""})")
+                    Text("最短ルート (${storeName})")
                 },
+
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "戻る")
@@ -169,10 +174,11 @@ fun RouteScreen(
                                     // ローカル履歴に追加
                                     cartViewModel.addHistoryEntry(
                                         storeId = storeId,
-                                        storeName = store?.storeName ?: "",
+                                        storeName = storeName,
                                         items = checkedItems,
                                         orderedAt = LocalDateTime.now()
                                     )
+
                                     // カートから削除
                                     val checkedIds =
                                         checkedItems.map { it.productId }.toSet()
@@ -224,13 +230,14 @@ fun RouteScreen(
                         .background(Color(0xFFEAEAEA)),
                     contentAlignment = Alignment.Center
                 ) {
-                    val floorMapRes = store?.floorMapRes ?: R.drawable.store_floor_map
+                    val floorMapRes = R.drawable.store_floor_map
                     AsyncImage(
                         model = floorMapRes,
                         contentDescription = "store map",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
                     )
+
                 }
             }
 

@@ -68,10 +68,12 @@ class CartViewModel : ViewModel() {
                     name = product.name,
                     category = product.category,
                     price = product.price,
+                    stock = product.stock,   // ★ 在庫数を保持
                     quantity = quantity,
                     imageRes = product.imageRes
                 )
             )
+
         }
         // list2 の選択状態と整合を取る
         syncSelectionState()

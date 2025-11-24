@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.supermarket.data.StoreDataRepository
 import com.example.supermarket.models.Product
 import com.example.supermarket.net.ApiClient
 import com.example.supermarket.net.ApiService
@@ -46,13 +45,11 @@ fun MenuScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
-    // カートの状態（この店舗の商品のみ抽出）
+    // この店舗のカート商品（店名取得用）
     val cartItemsInThisStore = cartViewModel.cartItems.filter { item -> item.storeId == storeId }
 
-    // 店舗情報（店名表示用）
-    val store = remember(storeId) {
-        StoreDataRepository.getStoreById(storeId)
-    }
+    // 店舗名（カート内の情報から取得）
+    val storeName = cartItemsInThisStore.firstOrNull()?.storeName ?: ""
 
     // この店舗の全商品（DB から取得）
     var allProducts by remember(storeId) {
@@ -76,18 +73,17 @@ fun MenuScreen(
                     Product(
                         productId = dto.product_id,
                         storeId = storeId,
-                        storeName = store?.storeName ?: "",
+                        storeName = storeName,
                         name = dto.name,
                         category = dto.category ?: "その他",
                         price = dto.price,
                         stock = dto.stock ?: 0,
-                        imageRes = store?.imageRes
-                            ?: com.example.supermarket.R.drawable.logo
+                        // 店舗画像は未連携のためロゴで代用
+                        imageRes = com.example.supermarket.R.drawable.logo
                     )
                 }
-                // ★ CartScreen 等で使うためにキャッシュ
-                StoreDataRepository.latestDbProducts[storeId] = allProducts
                 dbErrorMessage = null
+
             } else {
                 allProducts = emptyList()
                 dbErrorMessage =
@@ -176,7 +172,7 @@ fun MenuScreen(
             CenterAlignedTopAppBar(
                 title = {
                     // 店舗名をタイトルに表示
-                    Text(text = store?.storeName ?: "商品一覧")
+                    Text(text = if (storeName.isNotEmpty()) storeName else "商品一覧")
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {

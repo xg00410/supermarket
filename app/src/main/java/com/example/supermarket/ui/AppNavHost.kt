@@ -96,11 +96,13 @@ fun AppNavHost(
 
         // 第三层：检索结果（关键词 or 都道府县）
         composable(
-            route = Routes.STORE_RESULT + "/keyword={keyword}/pref={pref}"
+            route = Routes.STORE_RESULT + "/{keyword}",
+            arguments = listOf(
+                navArgument("keyword") { type = NavType.StringType }
+            )
         ) { backStack ->
-            val keyword = backStack.arguments?.getString("keyword")
-            val pref = backStack.arguments?.getString("pref")!!.toInt()
-            StoreResultScreen(navController, keyword, pref)
+            val keyword = backStack.arguments?.getString("keyword") ?: ""
+            StoreResultScreen(navController, keyword)
         }
 
         // 店铺详情
