@@ -100,7 +100,7 @@ fun StoreSelectScreen(
                 Spacer(modifier = Modifier.height(0.dp).weight(1f))
                 Text("検 索")
             }
-
+//
             // 🇯🇵 入力チェックエラー表示
             if (errorText != null) {
                 Text(
