@@ -215,6 +215,15 @@ fun CartScreen(
                         // ★ 店舗ごとの「最短ルートへ」ボタン
                         item(key = "route_${storeId}") {
                             Spacer(modifier = Modifier.height(4.dp))
+// ★ 店舗小計（追加）
+                            val subtotal = cartViewModel.storeSubtotal(storeId)
+                            Text(
+                                text = "小計：${subtotal} 円",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             Button(
                                 onClick = {

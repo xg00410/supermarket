@@ -165,6 +165,15 @@ fun List2Screen(
                                         }
                                     )
                                 }
+                                // ★ 店舗小計（追加）
+                                val subtotal = itemsInStore.sumOf { (it.price * it.quantity).toInt() }
+
+                                Text(
+                                    text = "店舗小計：${subtotal} 円",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                )
+
                             }
                         }
                     }

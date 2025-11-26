@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.data.SelectedStoreState
 import com.example.supermarket.models.Store
 import com.example.supermarket.net.ApiClient
 import com.example.supermarket.net.ApiService
@@ -59,9 +60,16 @@ fun StoreDetailScreen(
                         floorMapRes = null
                     )
                 }
-                store = allStores.firstOrNull { it.storeId == storeId }
-                if (store == null) {
+
+                // ★ 該当店舗を検索
+                val found = allStores.firstOrNull { it.storeId == storeId }
+                store = found
+
+                if (found == null) {
                     errorMessage = "店舗情報が見つかりません。"
+                } else {
+                    // ★ グローバル状態にも店舗名を反映
+                    SelectedStoreState.currentStoreName = found.storeName
                 }
             } else {
                 errorMessage = res.message ?: "店舗情報の取得に失敗しました。"
@@ -76,7 +84,8 @@ fun StoreDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("店舗詳細") },
+                // ★ 修正：storeName は関数引数に無いので、API 取得後の storeName を表示する
+                title = { Text(SelectedStoreState.currentStoreName.ifBlank { "店舗詳細" }) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -161,7 +170,6 @@ fun StoreDetailScreen(
                     // 商品一覧へ
                     Button(
                         onClick = {
-                            // Routes.MENU の定義に合わせてパラメータ付きで遷移
                             navController.navigate("${Routes.MENU}/${s.storeId}")
                         },
                         modifier = Modifier.fillMaxWidth()

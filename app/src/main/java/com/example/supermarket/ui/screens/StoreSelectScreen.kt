@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -97,7 +98,7 @@ fun StoreSelectScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Search, contentDescription = null)
-                Spacer(modifier = Modifier.height(0.dp).weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("検 索")
             }
 //

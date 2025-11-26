@@ -102,6 +102,15 @@ fun ProfileEditScreen(
                         return@Button
                     }
 
+                    // メールアドレス形式チェック（任意入力だが、形式が不正な場合はエラー）
+                    if (email.isNotBlank()) {
+                        val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
+                        if (!emailPattern.matches(email)) {
+                            errorMessage = "メールアドレスの形式が正しくありません。"
+                            return@Button
+                        }
+                    }
+
                     isLoading = true
                     errorMessage = null
 
@@ -115,6 +124,7 @@ fun ProfileEditScreen(
                                     email = if (email.isBlank()) null else email
                                 )
                             )
+
                             if (res.status == "ok") {
                                 // ★ セッションも更新
                                 UserSession.userName = name

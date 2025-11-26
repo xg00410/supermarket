@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.data.SelectedStoreState
 import com.example.supermarket.models.Product
 import com.example.supermarket.net.ApiClient
 import com.example.supermarket.net.ApiService
@@ -48,8 +49,15 @@ fun MenuScreen(
     // この店舗のカート商品（店名取得用）
     val cartItemsInThisStore = cartViewModel.cartItems.filter { item -> item.storeId == storeId }
 
-    // 店舗名（カート内の情報から取得）
-    val storeName = cartItemsInThisStore.firstOrNull()?.storeName ?: ""
+    // ★ まずはグローバル状態から店舗名を取得
+    val storeNameFromState = SelectedStoreState.currentStoreName
+
+    // ★ グローバルに名前が入っていればそれを優先、なければカートから取得
+    val storeName = if (storeNameFromState.isNotBlank()) {
+        storeNameFromState
+    } else {
+        cartItemsInThisStore.firstOrNull()?.storeName ?: ""
+    }
 
     // この店舗の全商品（DB から取得）
     var allProducts by remember(storeId) {

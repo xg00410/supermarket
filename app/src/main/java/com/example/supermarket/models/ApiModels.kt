@@ -31,8 +31,11 @@ data class RegisterBody(
     val password: String,
     val email: String?,
     val name: String?,
+    // 性別（任意）: 「男性」「女性」などの文字列を想定
+    val gender: String?,
     val phone: String?
 )
+
 
 // ログイン
 data class LoginBody(

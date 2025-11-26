@@ -8,21 +8,28 @@
 
 package com.example.supermarket.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.supermarket.R
+import com.example.supermarket.data.SelectedStoreState
 import com.example.supermarket.models.Store
 import com.example.supermarket.net.ApiClient
 import com.example.supermarket.net.ApiService
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,22 +130,45 @@ fun StoreResultScreen(
                 ) {
                     items(storeList) { store ->
 
-                        Row(
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .clickable {
+                                    // ★ 現在選択中の店舗ID／店舗名を記録
+                                    SelectedStoreState.currentStoreId = store.storeId
+                                    SelectedStoreState.currentStoreName = store.storeName
+                                    // 店舗詳細画面へ遷移
                                     navController.navigate("store_detail/${store.storeId}")
-                                }
-                                .padding(16.dp)
+                                },
+                            elevation = CardDefaults.cardElevation(2.dp)
                         ) {
-                            Column {
-                                Text(store.storeName, style = MaterialTheme.typography.titleMedium)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(store.address, style = MaterialTheme.typography.bodySmall)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+
+                                // 左側のロゴ画像（logo.png を読み込み）
+                                Image(
+                                    painter = painterResource(id = R.drawable.logo),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .padding(end = 12.dp)
+                                )
+
+
+                                Column {
+                                    Text(store.storeName, style = MaterialTheme.typography.titleMedium)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(store.address, style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
 
-                        Divider()
                     }
                 }
             }

@@ -97,6 +97,12 @@ class CartViewModel : ViewModel() {
             }
         }
     }
+    // 店舗ごとの小計（price: Double × quantity → Int）
+    fun storeSubtotal(storeId: String): Int {
+        return _cartItems
+            .filter { it.storeId == storeId }
+            .sumOf { (it.price * it.quantity).toInt() }
+    }
 
 
     fun removeItem(productId: Int) {

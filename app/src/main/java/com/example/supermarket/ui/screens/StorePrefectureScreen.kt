@@ -10,30 +10,20 @@
 
 package com.example.supermarket.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.StoreDataRepository
+import com.example.supermarket.net.ApiClient
+import com.example.supermarket.net.ApiService
 import com.example.supermarket.ui.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,14 +32,46 @@ fun StorePrefectureScreen(
     navController: NavController,
     regionId: Int
 ) {
-    // 🇯🇵 地域IDから都道府県一覧を取得
-    val prefectures = StoreDataRepository.getPrefecturesByRegion(regionId)
+    // ------------------------------
+    // 地域IDから都道府県一覧を取得
+    // ------------------------------
+    val prefecturesRaw = StoreDataRepository.getPrefecturesByRegion(regionId)
 
-    // 🇯🇵 タイトル用に地域名を取得（例: 関東）
+    // ------------------------------
+    // 店舗住所一覧をAPIから取得 → use for filtering
+    // ------------------------------
+    var storeAddressList by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val api = ApiClient.retrofit.create(ApiService::class.java)
+            val res = api.getStores()
+
+            if (res.status == "ok" && res.data != null) {
+                storeAddressList = res.data.map { it.address }
+            }
+        } catch (_: Exception) {
+            // 通信エラー時は空として扱う（＝フィルタ結果は何も出ない）
+        }
+    }
+
+    // ------------------------------
+    // ★ 店舗が存在する都道府県のみ表示する（B3）
+    // ------------------------------
+    val prefectures = prefecturesRaw.filter { pref ->
+        storeAddressList.any { addr -> addr.contains(pref.prefectureName) }
+    }
+
+    // ------------------------------
+    // タイトル用地域名
+    // ------------------------------
     val regionName = StoreDataRepository.regions
         .firstOrNull { it.regionId == regionId }
         ?.regionName ?: ""
 
+    // ------------------------------
+    // UI レイアウト
+    // ------------------------------
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,7 +93,9 @@ fun StorePrefectureScreen(
         ) {
 
             if (prefectures.isEmpty()) {
-                // 🇯🇵 この地域に対応する都道府県（＝店舗）が存在しない場合
+                // ------------------------------
+                // 店舗が存在しない地域
+                // ------------------------------
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -79,7 +103,9 @@ fun StorePrefectureScreen(
                     Text("この地域には店舗が登録されていません。")
                 }
             } else {
-                // 🇯🇵 都道府県ボタン一覧
+                // ------------------------------
+                // 都道府県ボタン
+                // ------------------------------
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
@@ -88,12 +114,6 @@ fun StorePrefectureScreen(
 
                         Button(
                             onClick = {
-                                // 🇯🇵 第三層へ遷移。
-                                //     ここでは「都道府県名」を keyword として渡し、
-                                //     StoreResultScreen 側で
-                                //       - 店舗名
-                                //       - 住所
-                                //     に部分一致する店舗を API から絞り込み表示する。
                                 navController.navigate(
                                     "${Routes.STORE_RESULT}/${pref.prefectureName}"
                                 )

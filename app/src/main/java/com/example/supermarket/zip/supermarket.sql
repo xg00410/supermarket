@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： 127.0.0.1
--- 生成日期： 2025-11-24 12:38:46
+-- 生成日期： 2025-11-26 01:48:47
 -- 服务器版本： 10.4.28-MariaDB
 -- PHP 版本： 8.0.28
 
@@ -42,7 +42,10 @@ CREATE TABLE `orders` (
 INSERT INTO `orders` (`id`, `user_id`, `store_id`, `total`, `ordered_at`) VALUES
 (1, 1, 'S001', 216, '2025-11-24 19:20:24'),
 (2, 1, 'S001', 198, '2025-11-24 20:15:58'),
-(3, 1, 'S001', 2844, '2025-11-24 20:21:07');
+(3, 1, 'S001', 2844, '2025-11-24 20:21:07'),
+(4, 1, 'S001', 296, '2025-11-25 13:26:49'),
+(5, 1, 'S001', 216, '2025-11-26 09:39:43'),
+(6, 1, 'S002', 750, '2025-11-26 09:39:54');
 
 -- --------------------------------------------------------
 
@@ -66,7 +69,10 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`) 
 (1, 1, 1, 2, 108),
 (2, 2, 2, 1, 198),
 (3, 3, 1, 19, 108),
-(4, 3, 2, 4, 198);
+(4, 3, 2, 4, 198),
+(5, 4, 3, 2, 148),
+(6, 5, 1, 2, 108),
+(7, 6, 5, 3, 250);
 
 -- --------------------------------------------------------
 
@@ -164,7 +170,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `userid`, `password`, `username`, `gender`, `phone`, `email`) VALUES
-(1, 'user01', 'test123456', 'user01', NULL, '123-4567-8910', 'user01＠test.com');
+(1, 'user01', '123', 'user01', '男性', '123-4567-8910', 'user01＠test.com'),
+(2, 'user02', 'test123456', 'user02', '男性', '123-4567-8910', 'user02@test.com');
 
 --
 -- 转储表的索引
@@ -220,13 +227,13 @@ ALTER TABLE `users`
 -- 使用表AUTO_INCREMENT `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- 使用表AUTO_INCREMENT `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- 使用表AUTO_INCREMENT `store_products`
@@ -238,7 +245,7 @@ ALTER TABLE `store_products`
 -- 使用表AUTO_INCREMENT `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- 限制导出的表

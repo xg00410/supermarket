@@ -40,6 +40,8 @@ fun RegisterScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    // 性別（任意）: 「男性」または「女性」を格納
+    var gender by remember { mutableStateOf<String?>(null) }
     var agreed by remember { mutableStateOf(false) }
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -119,6 +121,26 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
+
+            // 性別（任意）ラジオボタン
+            Text("性別（任意）")
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = gender == "男性",
+                    onClick = { gender = "男性" }
+                )
+                Text("男性")
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                RadioButton(
+                    selected = gender == "女性",
+                    onClick = { gender = "女性" }
+                )
+                Text("女性")
+            }
 
             // 氏名（任意）
             OutlinedTextField(
@@ -207,6 +229,15 @@ fun RegisterScreen(navController: NavController) {
                         return@Button
                     }
 
+                    // メールアドレス形式チェック（任意入力だが、形式が不正な場合はエラー）
+                    if (email.isNotBlank()) {
+                        val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
+                        if (!emailPattern.matches(email)) {
+                            errorMessage = "メールアドレスの形式が正しくありません。"
+                            return@Button
+                        }
+                    }
+
                     // 利用規約同意チェック
                     if (!agreed) {
                         errorMessage = "利用規約に同意してください。"
@@ -216,6 +247,7 @@ fun RegisterScreen(navController: NavController) {
                     isLoading = true
                     errorMessage = null
 
+
                     scope.launch {
                         try {
                             val body = RegisterBody(
@@ -223,9 +255,12 @@ fun RegisterScreen(navController: NavController) {
                                 password = password,
                                 email = if (email.isBlank()) null else email,
                                 name = if (name.isBlank()) null else name,
+                                // 性別（任意入力のため、未選択なら null）
+                                gender = gender,
                                 phone = if (phone.isBlank()) null else PhoneFormatter.format(phone)
                             )
                             val res = api.register(body)
+
                             if (res.status == "ok") {
                                 isLoading = false
                                 navController.navigate(Routes.REGISTER_SUCCESS) {
