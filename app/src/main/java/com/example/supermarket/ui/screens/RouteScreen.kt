@@ -43,6 +43,9 @@ import com.example.supermarket.net.ApiService
 import com.example.supermarket.viewmodel.CartViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +54,11 @@ fun RouteScreen(
     cartViewModel: CartViewModel,
     storeId: String
 ) {
+    // -----------------------------------------------------
+// ★ ルートノードの状態（Canvas はこれを描画するだけ）
+// -----------------------------------------------------
+    var routeNodesState by remember { mutableStateOf<List<com.example.supermarket.models.NavNode>>(emptyList()) }
+
     // ---------------- 対象店舗のカート商品 ----------------
     val cartItemsInStore by remember {
         derivedStateOf {
@@ -65,6 +73,22 @@ fun RouteScreen(
         }
     }
 
+// -----------------------------------------------------
+// ★ 店舗内ナビゲーション用（NavGraphRepository）
+// -----------------------------------------------------
+    val apiService = remember { ApiClient.retrofit.create(ApiService::class.java) }
+    val navRepo = remember { com.example.supermarket.data.NavGraphRepository(apiService) }
+
+// 店舗レイアウト（nodes / edges / shelves / access_points）
+    val storeLayout by produceState(
+        initialValue = null as com.example.supermarket.models.StoreLayoutResponse?
+    ) {
+        value = try {
+            navRepo.getLayout(storeId)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     // ---------------- 商品ごとのチェック状態（購入するかどうか） ----------------
     val checkedMap = remember {
@@ -74,7 +98,7 @@ fun RouteScreen(
     LaunchedEffect(cartItemsInStore) {
         checkedMap.clear()
         cartItemsInStore.forEach { item ->
-            checkedMap[item.productId] = false    // ★ デフォルトは未チェック
+            checkedMap[item.productId] = true
         }
     }
 
@@ -237,6 +261,96 @@ fun RouteScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit
                     )
+// ======================================================
+// ★ 店舗内ルート描画（Canvas）
+// ======================================================
+                    if (storeLayout != null) {
+                        LaunchedEffect(storeLayout, checkedMap, cartItemsInStore) {
+
+                            if (storeLayout == null) {
+                                routeNodesState = emptyList()
+                                return@LaunchedEffect
+                            }
+
+                            val entrance = storeLayout!!.nodes.firstOrNull { it.isEntrance }
+                            if (entrance == null) {
+                                routeNodesState = emptyList()
+                                return@LaunchedEffect
+                            }
+
+                            // ★ 1. 右上角出口ノード（x最大 & y最小）
+                            val exitNode = storeLayout!!.nodes.maxByOrNull { it.x - it.y }
+
+                            // ★ 2. 用户勾选的商品
+                            val targetItems = cartItemsInStore.filter { checkedMap[it.productId] == true }
+
+                            // ★ 3. 如果用户没有勾选商品 → 自动画 “入口 → 出口”
+                            if (targetItems.isEmpty()) {
+                                if (exitNode != null) {
+                                    routeNodesState = navRepo.shortestPath(
+                                        storeId = storeId,
+                                        startId = entrance.nodeId,
+                                        endId = exitNode.nodeId
+                                    )
+                                } else {
+                                    routeNodesState = emptyList()
+                                }
+                                return@LaunchedEffect
+                            }
+
+                            // ★ 4. 如果有勾选的商品 → 入口 → 商品... → 出口
+                            val routeProducts = navRepo.buildRouteForProducts(
+                                storeId = storeId,
+                                startNodeId = entrance.nodeId,
+                                items = targetItems
+                            )
+
+                            val lastNode = routeProducts.lastOrNull()
+
+                            val finalRoute =
+                                if (lastNode != null && exitNode != null) {
+                                    val toExit = navRepo.shortestPath(
+                                        storeId = storeId,
+                                        startId = lastNode.nodeId,
+                                        endId = exitNode.nodeId
+                                    )
+                                    routeProducts + toExit.drop(1)
+                                } else {
+                                    routeProducts
+                                }
+
+                            routeNodesState = finalRoute
+                        }
+
+
+                        // ---- 実際に地図上にルートを描画 ----
+                        androidx.compose.foundation.Canvas(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            if (routeNodesState.size > 1) {
+                                val nodes = routeNodesState
+                                for (i in 0 until nodes.size - 1) {
+
+                                    val p1 = Offset(
+                                        x = nodes[i].x * size.width,
+                                        y = nodes[i].y * size.height
+                                    )
+                                    val p2 = Offset(
+                                        x = nodes[i + 1].x * size.width,
+                                        y = nodes[i + 1].y * size.height
+                                    )
+
+                                    drawLine(
+                                        color = Color.Red,
+                                        start = p1,
+                                        end = p2,
+                                        strokeWidth = 5.dp.toPx()
+                                    )
+                                }
+                            }
+
+                        }
+                    }
 
                 }
             }
