@@ -24,5 +24,8 @@ data class CartItem(
     val price: Double,       // 単価
     val stock: Int,          // 在庫数（DB から取得）
     var quantity: Int,       // 数量
-    @DrawableRes val imageRes: Int?   // 商品画像（null の場合はダミー画像を利用）
+    @DrawableRes val imageRes: Int?,
+    val imageName: String?,    // 商品画像（null の場合はダミー画像を利用）
+    val shelfId: String?,
+    val accessPointId: String?
 )

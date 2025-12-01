@@ -86,4 +86,11 @@ interface ApiService {
     suspend fun getOrders(
         @Query("user_id") userId: Int
     ): OrderHistoryListResponse
+
+    // ★ 新規追加（店内レイアウト取得）
+    @GET("get_store_layout.php")
+    suspend fun getStoreLayout(
+        @Query("store_id") storeId: String
+    ): StoreLayoutResponse
+
 }

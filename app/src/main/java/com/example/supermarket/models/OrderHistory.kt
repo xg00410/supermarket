@@ -19,5 +19,6 @@ data class OrderHistory(
     val storeId: String,
     val storeName: String,
     val orderedAt: LocalDateTime,  // 日付＋時刻
+    val totalPrice: Int,
     val items: List<OrderHistoryItem>
 )

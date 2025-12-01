@@ -67,26 +67,34 @@ fun OrderHistoryScreen(
             val res = api.getOrders(userId)
             if (res.status == "ok" && res.data != null) {
                 history = res.data.map { dto ->
+
+                    // 明細リスト
+                    val items = dto.items.map { itemDto ->
+                        OrderHistoryItem(
+                            productId = itemDto.product_id,
+                            name = itemDto.name,
+                            price = itemDto.price.toDouble(),
+                            quantity = itemDto.quantity
+                        )
+                    }
+
+                    // 合計金額
+                    val total = items.sumOf { (it.price * it.quantity).toInt() }
+
                     OrderHistory(
                         orderId = dto.order_id,
                         storeId = dto.store_id,
                         storeName = dto.store_name,
                         orderedAt = try {
-                            // "YYYY-MM-DD HH:MM:SS" -> LocalDateTime
                             LocalDateTime.parse(dto.ordered_at.replace(" ", "T"))
                         } catch (e: Exception) {
                             LocalDateTime.now()
                         },
-                        items = dto.items.map { itemDto ->
-                            OrderHistoryItem(
-                                productId = itemDto.product_id,
-                                name = itemDto.name,
-                                price = itemDto.price.toDouble(),
-                                quantity = itemDto.quantity
-                            )
-                        }
+                        totalPrice = total,      // ★ 新增字段
+                        items = items
                     )
                 }
+
                 errorMessage = null
             } else {
                 errorMessage = res.message ?: "履歴の取得に失敗しました。"
@@ -230,6 +238,12 @@ fun OrderHistoryScreen(
                                         Text("¥${(item.price * item.quantity).toInt()}")
                                     }
                                 }
+                                // ★ 合計金額
+                                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                                Text(
+                                    text = "合計：¥${order.totalPrice}",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                             }
                         }
                     }

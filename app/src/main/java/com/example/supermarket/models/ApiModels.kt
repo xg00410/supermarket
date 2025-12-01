@@ -85,7 +85,10 @@ data class ProductDto(
     val name: String,
     val category: String?,
     val price: Double,
-    val stock: Int?
+    val stock: Int?,
+    val shelf_id: String?,          // PHP: shelf_id
+    val access_point_id: String?,
+    val image_name: String?// PHP: access_point_id
 )
 
 /**

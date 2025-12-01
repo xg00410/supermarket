@@ -41,6 +41,9 @@ data class Product(
     val price: Double,
     val stock: Int,
 
-    @DrawableRes
-    val imageRes: Int       // 本地图片资源ID
+    @DrawableRes val imageRes: Int,
+    val imageName: String?,
+    // ★ ここから追加（既存のコードは一切変更しない）
+    val shelfId: String?,          // PHP: shelf_id
+    val accessPointId  : String?     // PHP: access_point_id
 )

@@ -70,7 +70,10 @@ class CartViewModel : ViewModel() {
                     price = product.price,
                     stock = product.stock,   // ★ 在庫数を保持
                     quantity = quantity,
-                    imageRes = product.imageRes
+                    imageRes = product.imageRes,
+                    imageName = product.imageName,
+                    shelfId = product.shelfId,       // ★ 追加（ルート生成で必要）
+                    accessPointId = product.accessPointId
                 )
             )
 
@@ -236,13 +239,19 @@ class CartViewModel : ViewModel() {
             )
         }
 
+        // 合計金額を計算する
+        val total = items.sumOf { (it.price * it.quantity).toInt() }
+
+// 履歴エントリ作成
         val historyEntry = OrderHistory(
             orderId = System.currentTimeMillis(),
             storeId = storeId,
             storeName = storeName,
             orderedAt = orderedAt,
+            totalPrice = total,            // ★ 新增
             items = historyItems
         )
+
 
         _orderHistory.add(historyEntry)
     }

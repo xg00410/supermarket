@@ -23,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.supermarket.data.SelectedStoreState
@@ -32,6 +33,7 @@ import com.example.supermarket.net.ApiService
 import com.example.supermarket.ui.Routes
 import com.example.supermarket.ui.components.ProductCard
 import com.example.supermarket.viewmodel.CartViewModel
+
 
 // 商品確定時の動作種別
 private enum class MenuCommitAction {
@@ -45,7 +47,8 @@ fun MenuScreen(
     navController: NavController,
     cartViewModel: CartViewModel,
     storeId: String
-) {
+) {   // Drawable リソースID取得用コンテキスト
+    val context = LocalContext.current
     // この店舗のカート商品（店名取得用）
     val cartItemsInThisStore = cartViewModel.cartItems.filter { item -> item.storeId == storeId }
 
@@ -69,6 +72,7 @@ fun MenuScreen(
         mutableStateOf<String?>(null)
     }
 
+
     // ---------------- DB から商品取得（ダミーデータへのフォールバックは廃止） ----------------
     LaunchedEffect(storeId) {
         try {
@@ -86,11 +90,22 @@ fun MenuScreen(
                         category = dto.category ?: "その他",
                         price = dto.price,
                         stock = dto.stock ?: 0,
-                        // 店舗画像は未連携のためロゴで代用
-                        imageRes = com.example.supermarket.R.drawable.logo
+                        // DB の image_name を drawable リソースIDに変換
+                        imageRes = dto.image_name?.let { name ->
+                            val resId = context.resources.getIdentifier(
+                                name,
+                                "drawable",
+                                context.packageName
+                            )
+                            if (resId != 0) resId else com.example.supermarket.R.drawable.logo
+                        } ?: com.example.supermarket.R.drawable.logo,
+                        imageName = dto.image_name,
+                        shelfId = dto.shelf_id,
+                        accessPointId = dto.access_point_id
                     )
                 }
                 dbErrorMessage = null
+
 
             } else {
                 allProducts = emptyList()
