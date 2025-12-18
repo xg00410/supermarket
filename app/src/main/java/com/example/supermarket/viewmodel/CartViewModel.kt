@@ -19,8 +19,6 @@ class CartViewModel : ViewModel() {
     // ==============================
     val tempSelectedItems = mutableStateMapOf<Int, Int>()
 
-    // ---------------- 手動エリア順序（カテゴリ名のリスト） ----------------
-    val userAreaOrder = mutableStateListOf<String>()
 
     // カート内の商品一覧
     private val _cartItems = mutableStateListOf<CartItem>()

@@ -8,11 +8,13 @@
 //   - 下部に対象商品の簡易一覧（商品名 + 数量）を表示。
 //   - 「終了」ボタンでチェック済み商品の注文を DB に登録し、
 //     ローカル履歴追加＋カートから削除する。
+//ダイクストラ法（Dijkstra 法）
 // =========================================================
 
 package com.example.supermarket.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -45,7 +47,8 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
-
+import androidx.compose.ui.graphics.nativeCanvas
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +92,48 @@ fun RouteScreen(
             null
         }
     }
+    // ---------------- デバッグ：カート内商品とアクセスポイント分布の確認 ----------------
+    LaunchedEffect(storeLayout, cartItemsInStore) {
+        val tag = "RouteDebug"
+
+        // カート全体の概要
+        val totalItems = cartItemsInStore.size
+        val itemsWithAp = cartItemsInStore.count { it.accessPointId != null }
+
+        val apIdsFromCart = cartItemsInStore
+            .mapNotNull { it.accessPointId }
+            .toSet()
+
+        Log.d(tag, "---- Route Debug Start ----")
+        Log.d(tag, "storeId=$storeId, cartItemsInStore=$totalItems, itemsWithAp=$itemsWithAp")
+        Log.d(tag, "uniqueApIdsFromCart(${apIdsFromCart.size})=$apIdsFromCart")
+
+        // カート内：棚ごとの AP 利用状況
+        val groupedByShelf = cartItemsInStore.groupBy { it.shelfId ?: "(null)" }
+        groupedByShelf.forEach { (shelfId, items) ->
+            val apSet = items.mapNotNull { it.accessPointId }.toSet()
+            Log.d(
+                tag,
+                "Cart shelf=$shelfId, items=${items.size}, apIds=${apSet.ifEmpty { setOf("(none)") }}"
+            )
+        }
+
+        // レイアウト側：棚ごとの AP 定義状況
+        val layout = storeLayout
+        if (layout != null) {
+            val apByShelf = layout.access_points.groupBy { it.shelfId }
+            apByShelf.forEach { (shelfId, aps) ->
+                val ids = aps.map { it.accessPointId }
+                Log.d(
+                    tag,
+                    "Layout shelf=$shelfId, definedAPs=$ids"
+                )
+            }
+        }
+
+        Log.d(tag, "---- Route Debug End ----")
+    }
+
 
     // ---------------- 商品ごとのチェック状態（購入するかどうか） ----------------
     val checkedMap = remember {
@@ -98,37 +143,15 @@ fun RouteScreen(
     LaunchedEffect(cartItemsInStore) {
         checkedMap.clear()
         cartItemsInStore.forEach { item ->
-            checkedMap[item.productId] = true
+            checkedMap[item.productId] = false
         }
     }
 
-    // ---------------- エリア順序（カテゴリ名をエリアとみなす） ----------------
-    // カート内のカテゴリ一覧
-    val areaIds by remember(cartItemsInStore) {
-        mutableStateOf(
-            cartItemsInStore.map { it.category }.distinct()
-        )
-    }
+    // ---------------- エリア順序（実際の巡回順序に基づく） ----------------
+    // 実際のルート巡回順序に基づいたエリアと商品の順序
+    var sortedAreaOrder by remember { mutableStateOf<List<String>>(emptyList()) }
+    var sortedCartItems by remember { mutableStateOf<List<com.example.supermarket.models.CartItem>>(emptyList()) }
 
-    // 自動最短ルート（RouteRepository を利用）
-    val autoAreaOrder by remember(areaIds) {
-        mutableStateOf(
-            RouteRepository.calcShortestAreaOrder(areaIds)
-        )
-    }
-
-    // ユーザーが手動調整するエリア順序
-    val userAreaOrder = remember(autoAreaOrder) {
-        mutableStateListOf<String>().apply {
-            clear()
-            addAll(autoAreaOrder)
-        }
-    }
-
-    // 実際に画面に表示するエリア順序（手動が優先）
-    val finalAreaOrder by remember(userAreaOrder) {
-        derivedStateOf { userAreaOrder.toList() }
-    }
 
     // ---------------- 注文登録用 ----------------
     val scope = rememberCoroutineScope()
@@ -265,91 +288,438 @@ fun RouteScreen(
 // ★ 店舗内ルート描画（Canvas）
 // ======================================================
                     if (storeLayout != null) {
-                        LaunchedEffect(storeLayout, checkedMap, cartItemsInStore) {
+                        // ※ エリア順序は固定表示のみ（変更イベントが無いので再計算も不要）
+                        LaunchedEffect(storeLayout, cartItemsInStore) {
 
                             if (storeLayout == null) {
                                 routeNodesState = emptyList()
+                                sortedAreaOrder = emptyList()
+                                sortedCartItems = emptyList()
                                 return@LaunchedEffect
                             }
 
                             val entrance = storeLayout!!.nodes.firstOrNull { it.isEntrance }
                             if (entrance == null) {
                                 routeNodesState = emptyList()
+                                sortedAreaOrder = emptyList()
+                                sortedCartItems = emptyList()
                                 return@LaunchedEffect
                             }
 
-                            // ★ 1. 右上角出口ノード（x最大 & y最小）
-                            val exitNode = storeLayout!!.nodes.maxByOrNull { it.x - it.y }
 
-                            // ★ 2. 用户勾选的商品
-                            val targetItems = cartItemsInStore.filter { checkedMap[it.productId] == true }
+// ★ ルート対象：チェック状態とは無関係に、カート内の全商品
+//    → 画面に入った瞬間から「全商品を巡回するルート」を必ず描画する
+                            val targetItems = cartItemsInStore
 
-                            // ★ 3. 如果用户没有勾选商品 → 自动画 “入口 → 出口”
+// ★ 本当に商品が 1 件も無い場合だけ、ルートなし
                             if (targetItems.isEmpty()) {
-                                if (exitNode != null) {
-                                    routeNodesState = navRepo.shortestPath(
-                                        storeId = storeId,
-                                        startId = entrance.nodeId,
-                                        endId = exitNode.nodeId
-                                    )
-                                } else {
-                                    routeNodesState = emptyList()
-                                }
+                                routeNodesState = emptyList()
+                                sortedAreaOrder = emptyList()
+                                sortedCartItems = emptyList()
                                 return@LaunchedEffect
                             }
 
-                            // ★ 4. 如果有勾选的商品 → 入口 → 商品... → 出口
-                            val routeProducts = navRepo.buildRouteForProducts(
-                                storeId = storeId,
-                                startNodeId = entrance.nodeId,
-                                items = targetItems
-                            )
 
-                            val lastNode = routeProducts.lastOrNull()
+// ★ 商品巡回ルートの算出（入口 → 商品…）
+// ※ ルート計算は常に自動最短（エリア順序スライダーは表示順のみ）
+                            val routeProducts =
+                                navRepo.buildRouteForProducts(
+                                    storeId = storeId,
+                                    startNodeId = entrance.nodeId,
+                                    items = targetItems
+                                )
 
-                            val finalRoute =
-                                if (lastNode != null && exitNode != null) {
-                                    val toExit = navRepo.shortestPath(
-                                        storeId = storeId,
-                                        startId = lastNode.nodeId,
-                                        endId = exitNode.nodeId
+// ★ 現状：レジへ戻る処理は行わない（最後の商品地点で終了する）
+                            routeNodesState = routeProducts
+
+                            // ========================================
+                            // ★ ルートに基づいてエリアと商品を並び替え
+                            // ========================================
+
+                            // 1. 各アクセスポイントがルート上で何番目に訪問されるかを記録
+                            val apToIndex = mutableMapOf<String, Int>()
+                            val layout = storeLayout!!
+
+                            routeProducts.forEachIndexed { index, node ->
+                                // このノードに対応するアクセスポイントを探す
+                                layout.access_points.forEach { ap ->
+                                    val distance = kotlin.math.sqrt(
+                                        (node.x - ap.x) * (node.x - ap.x) +
+                                                (node.y - ap.y) * (node.y - ap.y)
                                     )
-                                    routeProducts + toExit.drop(1)
-                                } else {
-                                    routeProducts
+                                    // 非常に近い場合、このノードはこのAPに対応
+                                    if (distance < 0.01f && !apToIndex.containsKey(ap.accessPointId)) {
+                                        apToIndex[ap.accessPointId] = index
+                                    }
                                 }
+                            }
 
-                            routeNodesState = finalRoute
+                            // 2. 商品をルート訪問順序でソート
+                            val itemsWithOrder = targetItems.map { item ->
+                                val apId = item.accessPointId ?: ""
+                                val order = apToIndex[apId] ?: Int.MAX_VALUE
+                                item to order
+                            }.sortedBy { it.second }
+
+                            sortedCartItems = itemsWithOrder.map { it.first }
+
+                            // 3. エリア（カテゴリ）もルート訪問順序でソート
+                            val categoryToMinOrder = mutableMapOf<String, Int>()
+                            itemsWithOrder.forEach { (item, order) ->
+                                val cat = item.category
+                                if (!categoryToMinOrder.containsKey(cat) || categoryToMinOrder[cat]!! > order) {
+                                    categoryToMinOrder[cat] = order
+                                }
+                            }
+
+                            sortedAreaOrder = categoryToMinOrder.entries
+                                .sortedBy { it.value }
+                                .map { it.key }
+
                         }
+
 
 
                         // ---- 実際に地図上にルートを描画 ----
-                        androidx.compose.foundation.Canvas(
+                        Canvas(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            if (routeNodesState.size > 1) {
-                                val nodes = routeNodesState
-                                for (i in 0 until nodes.size - 1) {
 
-                                    val p1 = Offset(
-                                        x = nodes[i].x * size.width,
-                                        y = nodes[i].y * size.height
-                                    )
-                                    val p2 = Offset(
-                                        x = nodes[i + 1].x * size.width,
-                                        y = nodes[i + 1].y * size.height
-                                    )
+                            // 🟦 店舗黒枠の位置（画像内の相対位置で固定）
+                            // ★ PNG 全面使用 0〜1 坐标，不再需要黑框区域
+                            // ★ 整张图左上角 = (0,0), 右下角 = (1,1)
 
-                                    drawLine(
-                                        color = Color.Red,
-                                        start = p1,
-                                        end = p2,
-                                        strokeWidth = 5.dp.toPx()
+
+                            // -----------------------------------------------------
+                            // デバッグ用：ノード・エッジ・棚・アクセスポイントを重ねて描画
+                            //   ※ 常時表示すると見づらいので、通常は false のままにする
+                            // -----------------------------------------------------
+                            val debugDraw = false
+
+                            if (debugDraw && storeLayout != null) {
+                                // -------------------------------------------------------------
+// ★ ノード訪問順序を描画（数字で表示）
+// -------------------------------------------------------------
+                                if (routeNodesState.isNotEmpty()) {
+                                    routeNodesState.forEachIndexed { index, node ->
+                                        val px = size.width * node.x
+                                        val py = size.height * node.y
+
+                                        drawContext.canvas.nativeCanvas.apply {
+                                            val textPaint = android.graphics.Paint().apply {
+                                                color = android.graphics.Color.RED
+                                                textSize = 28f
+                                                isAntiAlias = true
+                                            }
+                                            drawText(
+                                                (index + 1).toString(),
+                                                px,
+                                                py,
+                                                textPaint
+                                            )
+                                        }
+                                    }
+                                }
+
+                                val layout = storeLayout!!
+
+                                // 1) 棚矩形を半透明で描画
+                                layout.shelves.forEach { shelf ->
+                                    // ★ 棚座標：0〜1 → キャンバス全面へ線形変換
+                                    val left = size.width * (shelf.x - shelf.width / 2f)
+                                    val topRect = size.height * (shelf.y - shelf.height / 2f)
+                                    val right = size.width * (shelf.x + shelf.width / 2f)
+                                    val bottom = size.height * (shelf.y + shelf.height / 2f)
+
+
+                                    drawRect(
+                                        color = Color(0f, 0f, 0f, 0.15f),
+                                        topLeft = Offset(left, topRect),
+                                        size = Size(right - left, bottom - topRect)
+                                    )
+                                }
+
+                                // 2) ノード位置を小さな灰色の点で描画
+                                layout.nodes.forEach { node ->
+                                    val px = size.width  * node.x
+                                    val py = size.height * node.y
+                                    drawCircle(
+                                        color = Color.DarkGray,
+                                        radius = 3.dp.toPx(),
+                                        center = Offset(px, py)
+                                    )
+                                }
+
+                                // 3) nav_edges を細い灰色の線で描画
+                                val nodeMap = layout.nodes.associateBy { it.nodeId }
+                                layout.edges.forEach { edge ->
+                                    val from = nodeMap[edge.fromNodeId]
+                                    val to = nodeMap[edge.toNodeId]
+                                    if (from != null && to != null) {
+                                        // ★ エッジ線分：0〜1 → キャンバス全面へ
+                                        val p1 = Offset(
+                                            x = size.width * from.x,
+                                            y = size.height * from.y
+                                        )
+                                        val p2 = Offset(
+                                            x = size.width * to.x,
+                                            y = size.height * to.y
+                                        )
+
+                                        drawLine(
+                                            color = Color.LightGray,
+                                            start = p1,
+                                            end = p2,
+                                            strokeWidth = 1.dp.toPx()
+                                        )
+                                    }
+                                }
+
+                                // 4) アクセスポイントを青い点で描画
+                                layout.access_points.forEach { ap ->
+                                    // ★ アクセスポイント座標
+                                    val cx = size.width * ap.x
+                                    val cy = size.height * ap.y
+
+                                    drawCircle(
+                                        color = Color.Blue,
+                                        radius = 3.dp.toPx(),
+                                        center = Offset(cx, cy)
                                     )
                                 }
                             }
+                            // -------------------------------------------------------------
+                            // ★ デバッグ用：ルートで使用されたエッジの使用回数を集計する
+                            // -------------------------------------------------------------
+                            val edgeUsage = mutableMapOf<Pair<String,String>, Int>()
+
+                            if (routeNodesState.size > 1) {
+                                val nodes = routeNodesState
+                                for (i in 0 until nodes.size - 1) {
+                                    val a = nodes[i].nodeId
+                                    val b = nodes[i+1].nodeId
+
+                                    // 無向グラフなのでIDをソートしてキー化
+                                    val key =
+                                        if (a < b) a to b else b to a
+
+                                    edgeUsage[key] = (edgeUsage[key] ?: 0) + 1
+                                }
+                            }
+
+
+                            // =============================================================
+// ★ 使用回数に応じてエッジを描画（圆角路径 + 方向箭头）
+// =============================================================
+                            if (routeNodesState.size > 1) {
+
+                                val nodes = routeNodesState
+                                val cornerRadius = 20.dp.toPx() // 转角圆弧半径
+
+                                for (i in 0 until nodes.size - 1) {
+
+                                    val a = nodes[i]
+                                    val b = nodes[i + 1]
+
+                                    // 無向エッジキー
+                                    val key =
+                                        if (a.nodeId < b.nodeId) a.nodeId to b.nodeId else b.nodeId to a.nodeId
+
+                                    val count = edgeUsage[key] ?: 1
+
+                                    // 使用回数ごとに線の太さを変更
+                                    val stroke = when {
+                                        count >= 4 -> 10.dp.toPx()
+                                        count == 3 -> 7.dp.toPx()
+                                        count == 2 -> 5.dp.toPx()
+                                        else -> 3.dp.toPx()
+                                    }
+
+                                    val p1 = Offset(size.width * a.x, size.height * a.y)
+                                    val p2 = Offset(size.width * b.x, size.height * b.y)
+
+                                    // ========================================
+                                    // 判断是否为转角（检查前一段和后一段的方向）
+                                    // ========================================
+                                    val isCorner = if (i > 0 && i < nodes.size - 1) {
+                                        val prev = nodes[i - 1]
+                                        val curr = nodes[i]
+                                        val next = nodes[i + 1]
+
+                                        val prevP = Offset(size.width * prev.x, size.height * prev.y)
+                                        val currP = Offset(size.width * curr.x, size.height * curr.y)
+                                        val nextP = Offset(size.width * next.x, size.height * next.y)
+
+                                        // 计算两个方向向量
+                                        val dx1 = currP.x - prevP.x
+                                        val dy1 = currP.y - prevP.y
+                                        val dx2 = nextP.x - currP.x
+                                        val dy2 = nextP.y - currP.y
+
+                                        // 如果方向改变，则为转角
+                                        kotlin.math.abs(dx1 * dx2 + dy1 * dy2) < 0.7f *
+                                                kotlin.math.sqrt((dx1*dx1 + dy1*dy1) * (dx2*dx2 + dy2*dy2))
+                                    } else false
+
+                                    // 绘制路径（带圆角）
+                                    if (isCorner && i < nodes.size - 1) {
+                                        // 转角处使用圆角路径
+                                        val path = androidx.compose.ui.graphics.Path()
+
+                                        val curr = nodes[i]
+                                        val currP = Offset(size.width * curr.x, size.height * curr.y)
+
+                                        // 计算圆角的控制点
+                                        val toNext = Offset(p2.x - currP.x, p2.y - currP.y)
+                                        val len = kotlin.math.sqrt(toNext.x * toNext.x + toNext.y * toNext.y)
+
+                                        if (len > cornerRadius * 2) {
+                                            val ratio = kotlin.math.min(cornerRadius / len, 0.3f)
+                                            val controlPoint = Offset(
+                                                currP.x + toNext.x * ratio,
+                                                currP.y + toNext.y * ratio
+                                            )
+
+                                            path.moveTo(p1.x, p1.y)
+                                            path.lineTo(currP.x, currP.y)
+                                            path.quadraticBezierTo(
+                                                currP.x, currP.y,
+                                                controlPoint.x, controlPoint.y
+                                            )
+                                            path.lineTo(p2.x, p2.y)
+
+                                            drawPath(
+                                                path = path,
+                                                color = Color.Red,
+                                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
+                                            )
+                                        } else {
+                                            // 距离太短，直接画直线
+                                            drawLine(
+                                                color = Color.Red,
+                                                start = p1,
+                                                end = p2,
+                                                strokeWidth = stroke
+                                            )
+                                        }
+                                    } else {
+                                        // 非转角，直接画直线
+                                        drawLine(
+                                            color = Color.Red,
+                                            start = p1,
+                                            end = p2,
+                                            strokeWidth = stroke
+                                        )
+                                    }
+
+                                    // ★ 中央に "×N" を描く（N ≥ 2 の時だけ）
+                                    if (count >= 2) {
+                                        val midX = (p1.x + p2.x) / 2f
+                                        val midY = (p1.y + p2.y) / 2f
+
+                                        drawContext.canvas.nativeCanvas.apply {
+                                            val textPaint = android.graphics.Paint().apply {
+                                                color = android.graphics.Color.RED
+                                                textSize = 32f
+                                                isAntiAlias = true
+                                            }
+                                            drawText("×${count}", midX, midY, textPaint)
+                                        }
+                                    }
+
+                                    // ========================================
+                                    // 在路径上绘制方向箭头
+                                    // ========================================
+                                    if (i % 2 == 0 || i == nodes.size - 2) { // 每隔一段或最后一段绘制箭头
+                                        val midX = (p1.x + p2.x) / 2f
+                                        val midY = (p1.y + p2.y) / 2f
+
+                                        // 计算方向
+                                        val dx = p2.x - p1.x
+                                        val dy = p2.y - p1.y
+                                        val angle = kotlin.math.atan2(dy.toDouble(), dx.toDouble()).toFloat()
+
+                                        // 箭头大小
+                                        val arrowSize = 12.dp.toPx()
+
+                                        // 绘制箭头（三角形）
+                                        val arrowPath = androidx.compose.ui.graphics.Path()
+                                        arrowPath.moveTo(midX, midY)
+                                        arrowPath.lineTo(
+                                            midX - arrowSize * kotlin.math.cos(angle + kotlin.math.PI / 6).toFloat(),
+                                            midY - arrowSize * kotlin.math.sin(angle + kotlin.math.PI / 6).toFloat()
+                                        )
+                                        arrowPath.lineTo(
+                                            midX - arrowSize * kotlin.math.cos(angle - kotlin.math.PI / 6).toFloat(),
+                                            midY - arrowSize * kotlin.math.sin(angle - kotlin.math.PI / 6).toFloat()
+                                        )
+                                        arrowPath.close()
+
+                                        drawPath(
+                                            path = arrowPath,
+                                            color = Color.Red
+                                        )
+                                    }
+                                }
+                            }
+
+
+                            // =====================================================
+                            // 2) カート内商品のアクセスポイントを黒丸で描画
+                            //    ※ チェック状態とは無関係に「全商品」を対象とする
+                            // =====================================================
+
+                            // ★ カート内の全商品ID（チェック状態は無視）
+                            val targetProductIds = cartItemsInStore
+                                .map { it.productId }
+                                .toSet()
+
+                            // productId -> accessPointId の対応表
+                            val productIdToApId = cartItemsInStore.associate { it.productId to it.accessPointId }
+
+                            // 対象 accessPointId の集合
+                            val targetApIds = targetProductIds
+                                .mapNotNull { pid -> productIdToApId[pid] }
+                                .toSet()
+
+                            // レイアウトからアクセス点一覧を取得（null なら空）
+                            val accessPoints = storeLayout?.access_points ?: emptyList()
+
+                            // 対象商品のアクセス点にだけ黒丸を描く
+                            accessPoints
+                                .filter { ap -> ap.accessPointId in targetApIds }
+                                .forEach { ap ->
+                                    val cx = size.width * ap.x
+                                    val cy = size.height * ap.y
+
+                                    // ★ ブラックポイント本体
+                                    drawCircle(
+                                        color = Color.Black,
+                                        radius = 6.dp.toPx(),
+                                        center = Offset(cx, cy)
+                                    )
+
+// ★ デバッグ時のみ、AP の簡易ラベル(E_L 等)を表示
+                                    if (debugDraw) {
+                                        val label = ap.accessPointId
+                                            ?.removePrefix("AP_")
+                                            ?: ""
+
+                                        drawContext.canvas.nativeCanvas.apply {
+                                            val textPaint = android.graphics.Paint().apply {
+                                                color = android.graphics.Color.BLACK
+                                                textSize = 28f
+                                                isAntiAlias = true
+                                            }
+                                            drawText(label, cx + 4f, cy - 4f, textPaint)
+                                        }
+                                    }
+                                }
+
 
                         }
+
+
                     }
 
                 }
@@ -376,67 +746,23 @@ fun RouteScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    finalAreaOrder.forEachIndexed { index, id ->
+                    sortedAreaOrder.forEach { id ->
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             tonalElevation = 2.dp,
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Row(
-                                modifier = Modifier.padding(
-                                    horizontal = 10.dp,
-                                    vertical = 4.dp
-                                ),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // 左矢印（先頭以外）
-                                if (index > 0) {
-                                    IconButton(
-                                        onClick = {
-                                            val currentIndex = userAreaOrder.indexOf(id)
-                                            if (currentIndex > 0) {
-                                                val prev =
-                                                    userAreaOrder[currentIndex - 1]
-                                                userAreaOrder[currentIndex - 1] = id
-                                                userAreaOrder[currentIndex] = prev
-                                            }
-                                        },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowLeft,
-                                            contentDescription = "左へ"
-                                        )
-                                    }
-                                }
-
                                 Text(text = id)
-
-                                // 右矢印（最後以外）
-                                if (index < finalAreaOrder.size - 1) {
-                                    IconButton(
-                                        onClick = {
-                                            val currentIndex = userAreaOrder.indexOf(id)
-                                            if (currentIndex >= 0 && currentIndex < userAreaOrder.size - 1) {
-                                                val next =
-                                                    userAreaOrder[currentIndex + 1]
-                                                userAreaOrder[currentIndex + 1] = id
-                                                userAreaOrder[currentIndex] = next
-                                            }
-                                        },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowRight,
-                                            contentDescription = "右へ"
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
+
                 }
-            }
+            }‘
 
             // ---------------- 対象商品（横スクロール / 小さめカード） ----------------
             Column(
@@ -457,7 +783,7 @@ fun RouteScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    cartItemsInStore.forEach { item ->
+                    sortedCartItems.forEach { item ->
                         val checked = checkedMap[item.productId] ?: false
 
                         Card(

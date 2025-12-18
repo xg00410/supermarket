@@ -41,6 +41,7 @@ data class Product(
     val price: Double,
     val stock: Int,
 
+
     @DrawableRes val imageRes: Int,
     val imageName: String?,
     // ★ ここから追加（既存のコードは一切変更しない）
