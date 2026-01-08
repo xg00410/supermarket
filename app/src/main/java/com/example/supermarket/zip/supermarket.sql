@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： 127.0.0.1
--- 生成日期： 2025-12-18 06:13:06
+-- 生成日期： 2026-01-08 07:06:53
 -- 服务器版本： 10.4.28-MariaDB
 -- PHP 版本： 8.0.28
 
@@ -40,6 +40,22 @@ CREATE TABLE `nav_edges` (
 --
 
 INSERT INTO `nav_edges` (`edge_id`, `store_id`, `from_node_id`, `to_node_id`, `distance`) VALUES
+(1, 'TEST01', 'S1', 'L2', NULL),
+(2, 'TEST01', 'L2', 'S1', NULL),
+(3, 'TEST01', 'M1', 'S1', NULL),
+(4, 'TEST01', 'S1', 'M1', NULL),
+(5, 'TEST01', 'S2', 'M1', NULL),
+(6, 'TEST01', 'M1', 'S2', NULL),
+(7, 'TEST01', 'S2', 'R1', NULL),
+(8, 'TEST01', 'R1', 'S2', NULL),
+(9, 'TEST01', 'L1', 'S3', NULL),
+(10, 'TEST01', 'S3', 'L1', NULL),
+(11, 'TEST01', 'B1', 'S3', NULL),
+(12, 'TEST01', 'S3', 'B1', NULL),
+(13, 'TEST01', 'B1', 'S4', NULL),
+(14, 'TEST01', 'S4', 'B1', NULL),
+(15, 'TEST01', 'R2', 'S4', NULL),
+(16, 'TEST01', 'S4', 'R2', NULL),
 (143, 'TEST01', 'ENT', 'L1', NULL),
 (144, 'TEST01', 'L1', 'ENT', NULL),
 (145, 'TEST01', 'L1', 'L2', NULL),
@@ -54,16 +70,8 @@ INSERT INTO `nav_edges` (`edge_id`, `store_id`, `from_node_id`, `to_node_id`, `d
 (154, 'TEST01', 'T3', 'T2', NULL),
 (155, 'TEST01', 'T3', 'T4', NULL),
 (156, 'TEST01', 'T4', 'T3', NULL),
-(159, 'TEST01', 'L2', 'M1', NULL),
-(160, 'TEST01', 'M1', 'L2', NULL),
-(161, 'TEST01', 'L1', 'B1', NULL),
-(162, 'TEST01', 'B1', 'L1', NULL),
 (165, 'TEST01', 'R1', 'R2', NULL),
 (166, 'TEST01', 'R2', 'R1', NULL),
-(167, 'TEST01', 'R2', 'B1', NULL),
-(168, 'TEST01', 'B1', 'R2', NULL),
-(169, 'TEST01', 'M1', 'R1', NULL),
-(170, 'TEST01', 'R1', 'M1', NULL),
 (171, 'TEST01', 'T4', 'R1', NULL),
 (172, 'TEST01', 'R1', 'T4', NULL),
 (173, 'TEST01', 'T4', 'R1', NULL),
@@ -90,14 +98,18 @@ CREATE TABLE `nav_nodes` (
 --
 
 INSERT INTO `nav_nodes` (`node_id`, `store_id`, `x`, `y`, `is_entrance`) VALUES
-('B1', 'TEST01', 0.70625, 0.74, 0),
+('B1', 'TEST01', 0.52975, 0.74, 0),
 ('ENT', 'TEST01', 0.11765, 0.8, 1),
 ('L1', 'TEST01', 0.11765, 0.74, 0),
 ('L2', 'TEST01', 0.11765, 0.53, 0),
 ('L3', 'TEST01', 0.11765, 0.32, 0),
-('M1', 'TEST01', 0.70625, 0.53, 0),
+('M1', 'TEST01', 0.52975, 0.53, 0),
 ('R1', 'TEST01', 0.9, 0.53, 0),
 ('R2', 'TEST01', 0.9, 0.74, 0),
+('S1', 'TEST01', 0.35325, 0.53, 0),
+('S2', 'TEST01', 0.70625, 0.53, 0),
+('S3', 'TEST01', 0.35325, 0.74, 0),
+('S4', 'TEST01', 0.70625, 0.74, 0),
 ('T1', 'TEST01', 0.35325, 0.32, 0),
 ('T2', 'TEST01', 0.52975, 0.32, 0),
 ('T3', 'TEST01', 0.70625, 0.32, 0),
@@ -365,14 +377,14 @@ INSERT INTO `shelf_access_points` (`access_point_id`, `shelf_id`, `store_id`, `x
 ('AP_B', 'B', 'TEST01', 0.4415, 0.27, 'T2', 'BOTTOM'),
 ('AP_C', 'C', 'TEST01', 0.618, 0.27, 'T3', 'BOTTOM'),
 ('AP_D', 'D', 'TEST01', 0.7945, 0.27, 'T4', 'BOTTOM'),
-('AP_E1', 'E1', 'TEST01', 0.35325, 0.37, 'L3', 'LEFT'),
-('AP_E2', 'E2', 'TEST01', 0.70625, 0.37, 'M1', 'RIGHT'),
-('AP_F1', 'F1', 'TEST01', 0.35325, 0.48, 'L2', 'LEFT'),
-('AP_F2', 'F2', 'TEST01', 0.70625, 0.48, 'M1', 'RIGHT'),
-('AP_G1', 'G1', 'TEST01', 0.35325, 0.58, 'L2', 'LEFT'),
-('AP_G2', 'G2', 'TEST01', 0.70625, 0.58, 'M1', 'RIGHT'),
-('AP_H1', 'H1', 'TEST01', 0.35325, 0.69, 'L1', 'LEFT'),
-('AP_H2', 'H2', 'TEST01', 0.70625, 0.69, 'B1', 'RIGHT'),
+('AP_E1', 'E1', 'TEST01', 0.35325, 0.37, 'T1', 'LEFT'),
+('AP_E2', 'E2', 'TEST01', 0.70625, 0.37, 'T3', 'RIGHT'),
+('AP_F1', 'F1', 'TEST01', 0.35325, 0.48, 'S1', 'LEFT'),
+('AP_F2', 'F2', 'TEST01', 0.70625, 0.48, 'S2', 'RIGHT'),
+('AP_G1', 'G1', 'TEST01', 0.35325, 0.58, 'S1', 'LEFT'),
+('AP_G2', 'G2', 'TEST01', 0.70625, 0.58, 'S2', 'RIGHT'),
+('AP_H1', 'H1', 'TEST01', 0.35325, 0.69, 'S3', 'LEFT'),
+('AP_H2', 'H2', 'TEST01', 0.70625, 0.69, 'S4', 'RIGHT'),
 ('AP_I', 'I', 'TEST01', 0.935, 0.5, 'R1', 'LEFT');
 
 -- --------------------------------------------------------

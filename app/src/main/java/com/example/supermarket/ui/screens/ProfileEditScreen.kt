@@ -63,19 +63,43 @@ fun ProfileEditScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
+            // 名前：数字・記号を禁止（漢字/ひらがな/カタカナ/英字/空白/・/ーのみ許可）
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = { input ->
+                    val filtered = input.filter { ch ->
+                        ch == ' ' || ch == '・' || ch == 'ー' ||
+                                ch.isLetter() || // 英字 +（環境によっては）一部文字
+                                Character.UnicodeScript.of(ch.code) in setOf(
+                            Character.UnicodeScript.HAN,       // 漢字
+                            Character.UnicodeScript.HIRAGANA,  // ひらがな
+                            Character.UnicodeScript.KATAKANA   // カタカナ
+                        )
+                    }
+                    // 入力禁止（不正文字は反映しない）
+                    name = filtered
+                },
                 label = { Text("名前") },
                 modifier = Modifier.fillMaxWidth()
             )
 
+
+            // 電話番号：半角数字のみ・最大11桁（入力禁止）
+            val phoneMaxLen = 11
+
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }
+                    if (digits.length <= phoneMaxLen) {
+                        phone = digits
+                    }
+                },
                 label = { Text("電話番号") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+
 
             OutlinedTextField(
                 value = email,
@@ -102,14 +126,28 @@ fun ProfileEditScreen(
                         return@Button
                     }
 
-                    // メールアドレス形式チェック（任意入力だが、形式が不正な場合はエラー）
-                    if (email.isNotBlank()) {
-                        val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
-                        if (!emailPattern.matches(email)) {
-                            errorMessage = "メールアドレスの形式が正しくありません。"
-                            return@Button
-                        }
+                    // 電話番号チェック（表示上は「-」を許可するが、判定は数字のみで行う）
+                    val phoneDigits = phone.filter { it.isDigit() }
+
+                    if (phone.isNotBlank() && !phoneDigits.matches(Regex("^\\d{11}$"))) {
+                        errorMessage = "電話番号は半角数字11桁で入力してください。"
+                        return@Button
                     }
+
+
+
+// メールアドレスチェック（必須・形式のみ）
+                    if (email.isBlank()) {
+                        errorMessage = "メールアドレスを入力してください。"
+                        return@Button
+                    }
+
+                    val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
+                    if (!emailPattern.matches(email)) {
+                        errorMessage = "メールアドレスの形式が正しくありません。"
+                        return@Button
+                    }
+
 
                     isLoading = true
                     errorMessage = null
@@ -120,7 +158,7 @@ fun ProfileEditScreen(
                                 UpdateProfileBody(
                                     user_id = uid,
                                     name = if (name.isBlank()) null else name,
-                                    phone = if (phone.isBlank()) null else PhoneFormatter.format(phone),
+                                    phone = if (phone.isBlank()) null else PhoneFormatter.format(phoneDigits),
                                     email = if (email.isBlank()) null else email
                                 )
                             )
@@ -128,7 +166,7 @@ fun ProfileEditScreen(
                             if (res.status == "ok") {
                                 // ★ セッションも更新
                                 UserSession.userName = name
-                                UserSession.phone = PhoneFormatter.format(phone)
+                                UserSession.phone = if (phone.isBlank()) "" else PhoneFormatter.format(phoneDigits)
                                 UserSession.email = email
 
                                 isLoading = false

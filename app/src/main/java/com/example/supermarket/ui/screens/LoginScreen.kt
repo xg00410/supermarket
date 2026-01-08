@@ -54,9 +54,18 @@ fun LoginScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            // 英数字のみ・最大文字数制限（入力禁止を実現）
+            val userIdMaxLen = 50
+            val passwordMaxLen = 255
+            val alnumRegex = Regex("^[a-zA-Z0-9]*$")
+
             OutlinedTextField(
                 value = userId,
-                onValueChange = { userId = it },
+                onValueChange = { input ->
+                    if (input.length <= userIdMaxLen && alnumRegex.matches(input)) {
+                        userId = input
+                    }
+                },
                 label = { Text("ユーザーID") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth()
@@ -64,15 +73,20 @@ fun LoginScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { input ->
-                    // Tab と改行(\n)を除外してパスワードに反映
-                    password = input.filter { it != '\t' && it != '\n' }
+                onValueChange = { raw ->
+                    // Tab と改行(\n)は除外（既存仕様を保持）
+                    val input = raw.filter { it != '\t' && it != '\n' }
+
+                    if (input.length <= passwordMaxLen && alnumRegex.matches(input)) {
+                        password = input
+                    }
                 },
                 label = { Text("パスワード") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
+
 
 
             if (errorMessage != null) {

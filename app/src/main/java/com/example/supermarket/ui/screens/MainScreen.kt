@@ -65,7 +65,7 @@ fun MainScreen(
 
         // 著作権表記（画面下部固定）
         Text(
-            text = "© 2025 Supermarket Team",
+            text = "© 2025 BAROGAKI Team",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

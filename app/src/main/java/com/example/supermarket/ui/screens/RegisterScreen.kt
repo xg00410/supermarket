@@ -91,13 +91,21 @@ fun RegisterScreen(navController: NavController) {
 
             // ------------------- 入力項目 -------------------
 
-            // ユーザーID
+            // ユーザーID：英数字のみ・最大文字数制限（入力禁止）
+            val userIdMaxLen = 50
+            val alnumRegex = Regex("^[a-zA-Z0-9]*$")
+
             OutlinedTextField(
                 value = userId,
-                onValueChange = { userId = it },
+                onValueChange = { input ->
+                    if (input.length <= userIdMaxLen && alnumRegex.matches(input)) {
+                        userId = input
+                    }
+                },
                 label = { Text("ユーザーID（必須）") },
                 modifier = Modifier.fillMaxWidth()
             )
+
 
             // パスワード
             OutlinedTextField(
@@ -142,21 +150,38 @@ fun RegisterScreen(navController: NavController) {
                 Text("女性")
             }
 
-            // 氏名（任意）
+            /// 氏名：記号の混入を抑止（入力禁止）
+//  - 日本語氏名でよく使う「・」「ー」「-」とスペースは許可
+            val nameMaxLen = 100
+            val nameRegex = Regex("^[\\p{L}\\p{M}0-9\\s・ー-]*$")
+
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
-                label = { Text("氏名") },
+                onValueChange = { input ->
+                    if (input.length <= nameMaxLen && nameRegex.matches(input)) {
+                        name = input
+                    }
+                },
+                label = { Text("氏名（必須）") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 電話番号（任意）※ハイフンなしで入力 → 送信時にフォーマット
+
+            // 電話番号：半角数字のみ・最大11桁（入力禁止）
+            val phoneMaxLen = 11
+
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }
+                    if (digits.length <= phoneMaxLen) {
+                        phone = digits
+                    }
+                },
                 label = { Text("電話番号（半角数字・ハイフン不要）") },
                 modifier = Modifier.fillMaxWidth()
             )
+
 
             // メールアドレス（任意）
             OutlinedTextField(
@@ -209,11 +234,18 @@ fun RegisterScreen(navController: NavController) {
             // ------------------- 登録ボタン -------------------
             Button(
                 onClick = {
-                    // 必須チェック
-                    if (userId.isBlank() || password.isBlank()) {
-                        errorMessage = "ユーザーIDとパスワードは必須です。"
+                    // 必須チェック（テスト仕様書に合わせて必須項目を拡張）
+                    if (userId.isBlank() || password.isBlank() || name.isBlank() || phone.isBlank() || email.isBlank()) {
+                        errorMessage = "ユーザーID、パスワード、氏名、電話番号、メールアドレスは必須です。"
                         return@Button
                     }
+
+// ユーザーID文字数チェック（6文字以内はNG）
+                    if (userId.length <= 6) {
+                        errorMessage = "ユーザーIDは7文字以上で入力してください。"
+                        return@Button
+                    }
+
 
                     // パスワード強度チェック：8文字以上 & 英字 + 数字 を含む
                     val hasLetter = password.any { it.isLetter() }
@@ -229,14 +261,15 @@ fun RegisterScreen(navController: NavController) {
                         return@Button
                     }
 
-                    // メールアドレス形式チェック（任意入力だが、形式が不正な場合はエラー）
-                    if (email.isNotBlank()) {
+                    // メールアドレス形式チェック（必須）
+                    run {
                         val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
                         if (!emailPattern.matches(email)) {
                             errorMessage = "メールアドレスの形式が正しくありません。"
                             return@Button
                         }
                     }
+
 
                     // 利用規約同意チェック
                     if (!agreed) {
@@ -253,12 +286,12 @@ fun RegisterScreen(navController: NavController) {
                             val body = RegisterBody(
                                 user_code = userId,
                                 password = password,
-                                email = if (email.isBlank()) null else email,
-                                name = if (name.isBlank()) null else name,
-                                // 性別（任意入力のため、未選択なら null）
+                                email = email,
+                                name = name,
                                 gender = gender,
-                                phone = if (phone.isBlank()) null else PhoneFormatter.format(phone)
+                                phone = PhoneFormatter.format(phone)
                             )
+
                             val res = api.register(body)
 
                             if (res.status == "ok") {

@@ -49,6 +49,12 @@ interface ApiService {
         @Body body: ResetPasswordBody
     ): ApiResponse
 
+    @POST("verify_user_email.php")
+    suspend fun verifyUserEmail(
+        @Body body: VerifyUserEmailBody
+    ): ApiResponse
+
+
     // ---------------- 商品一覧取得 ----------------
     /**
      * 店舗ごとの商品一覧取得 API (get_products.php)

@@ -57,9 +57,17 @@ fun PasswordResetScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
+            // パスワード：英数字のみ・最大文字数制限（入力禁止）
+            val pwdMaxLen = 255
+            val alnumRegex = Regex("^[a-zA-Z0-9]*$")
+
             OutlinedTextField(
                 value = pwd1,
-                onValueChange = { pwd1 = it },
+                onValueChange = { input ->
+                    if (input.length <= pwdMaxLen && alnumRegex.matches(input)) {
+                        pwd1 = input
+                    }
+                },
                 label = { Text("新しいパスワード") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
@@ -67,11 +75,16 @@ fun PasswordResetScreen(
 
             OutlinedTextField(
                 value = pwd2,
-                onValueChange = { pwd2 = it },
+                onValueChange = { input ->
+                    if (input.length <= pwdMaxLen && alnumRegex.matches(input)) {
+                        pwd2 = input
+                    }
+                },
                 label = { Text("新しいパスワード（確認）") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
             )
+
 
             if (errorMessage != null) {
                 Text(
@@ -98,6 +111,13 @@ fun PasswordResetScreen(
                     }
                     if (pwd1 != pwd2) {
                         errorMessage = "パスワードが一致しません。"
+                        return@Button
+                    }
+                    // パスワード規格チェック（英数字のみ・8文字以上）
+                    val strongRegex = Regex("^[a-zA-Z0-9]+$")
+
+                    if (!strongRegex.matches(pwd1) || pwd1.length < 8) {
+                        errorMessage = "パスワードは英数字のみ、8文字以上で入力してください。"
                         return@Button
                     }
 

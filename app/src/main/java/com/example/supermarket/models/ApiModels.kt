@@ -42,6 +42,11 @@ data class LoginBody(
     val user_code: String,
     val password: String
 )
+// ユーザーID + メールアドレス確認（パスワード更新はしない）
+data class VerifyUserEmailBody(
+    val user_code: String,
+    val email: String
+)
 
 // パスワードリセット
 data class ResetPasswordBody(

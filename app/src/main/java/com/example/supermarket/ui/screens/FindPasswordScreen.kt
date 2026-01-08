@@ -49,12 +49,21 @@ fun FindPasswordScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
+            // ユーザーID：英数字のみ・最大文字数制限（入力禁止）
+            val userIdMaxLen = 50
+            val alnumRegex = Regex("^[a-zA-Z0-9]*$")
+
             OutlinedTextField(
                 value = userId,
-                onValueChange = { userId = it },
+                onValueChange = { input ->
+                    if (input.length <= userIdMaxLen && alnumRegex.matches(input)) {
+                        userId = input
+                    }
+                },
                 label = { Text("ユーザーID") },
                 modifier = Modifier.fillMaxWidth()
             )
+
 
             OutlinedTextField(
                 value = email,
@@ -75,13 +84,23 @@ fun FindPasswordScreen(
 
             Button(
                 onClick = {
+                    // 必須チェック
                     if (userId.isBlank() || email.isBlank()) {
                         errorMessage = "すべて入力してください。"
                         return@Button
                     }
-                    // ★ 状態に保持して次画面へ
+
+                    // メール形式チェック
+                    val emailPattern = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$".toRegex()
+                    if (!emailPattern.matches(email)) {
+                        errorMessage = "メールアドレスの形式が正しくありません。"
+                        return@Button
+                    }
+
+                    // 次画面で照合するため、入力値を保持して遷移する
                     PasswordResetState.userCode = userId
                     PasswordResetState.email = email
+
                     errorMessage = null
                     onNext()
                 },
@@ -89,6 +108,8 @@ fun FindPasswordScreen(
             ) {
                 Text("次へ")
             }
+
+
         }
     }
 }
