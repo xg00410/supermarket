@@ -241,8 +241,8 @@ fun RegisterScreen(navController: NavController) {
                     }
 
 // ユーザーID文字数チェック（6文字以内はNG）
-                    if (userId.length <= 6) {
-                        errorMessage = "ユーザーIDは7文字以上で入力してください。"
+                    if (userId.length <= 5) {
+                        errorMessage = "ユーザーIDは6文字以上で入力してください。"
                         return@Button
                     }
 
