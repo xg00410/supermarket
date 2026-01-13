@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： 127.0.0.1
--- 生成日期： 2026-01-08 07:06:53
+-- 生成日期： 2026-01-13 01:47:19
 -- 服务器版本： 10.4.28-MariaDB
 -- PHP 版本： 8.0.28
 
@@ -560,7 +560,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `userid`, `password`, `username`, `gender`, `phone`, `email`) VALUES
-(1, 'user01', '123', 'user01', '男性', '123-4567-8910', 'user01@test.com');
+(1, 'user01', '123', 'user01', '男性', '123-4567-8910', 'user01@test.com'),
+(2, 'abcdef', 'abcdef123456', 'abcdef', '男性', NULL, 'abcdef@test.com');
 
 --
 -- 转储表的索引
@@ -674,7 +675,7 @@ ALTER TABLE `store_products`
 -- 使用表AUTO_INCREMENT `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- 限制导出的表
