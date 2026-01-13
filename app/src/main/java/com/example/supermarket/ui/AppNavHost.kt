@@ -73,10 +73,6 @@ fun AppNavHost(
         // ------------------------
         composable(Routes.STORE_SELECT) { StoreSelectScreen(navController) }
 
-        composable(Routes.GPS_PERMISSION) { GpsPermissionScreen(navController) }
-
-        composable(Routes.STORE_MAP) { StoreMapScreen(navController) }
-
         // 第二层：区域 → 都道府县
         composable(
             route = Routes.STORE_PREFECTURE + "/{regionId}"
@@ -112,13 +108,7 @@ fun AppNavHost(
         }
 
 
-        // 旧版 store_region
-        composable(
-            route = "${Routes.STORE_REGION}/{prefecture}",
-            arguments = listOf(navArgument("prefecture") { type = NavType.StringType })
-        ) {
-            StoreRegionScreen(navController, it.arguments?.getString("prefecture") ?: "")
-        }
+
 
         // 店铺地图扩展
         composable(
@@ -225,9 +215,5 @@ fun AppNavHost(
             OrderHistoryScreen(navController, cartViewModel)
         }
 
-        // ------------------------
-        // 帮助
-        // ------------------------
-        composable(Routes.HELP) { HelpScreen(navController) }
     }
 }

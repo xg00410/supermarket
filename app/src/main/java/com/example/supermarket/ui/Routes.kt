@@ -7,7 +7,6 @@
 //   - 実際の NavHost では、必要に応じて
 //       "${Routes.STORE_DETAIL}/{storeId}"
 //       "${Routes.MENU}/{storeId}"
-//       "${Routes.STORE_REGION}/{prefecture}"
 //     のように組み立てて使用する。
 // =========================================================
 
@@ -34,10 +33,9 @@ object Routes {
     const val STORE_PREFECTURE = "store_prefecture"  // 第二層：都道府県選択
     const val STORE_RESULT = "store_result"          // 第三層：検索結果一覧
     const val STORE_DETAIL = "store_detail"          // 店舗拡大（詳細）
-    const val STORE_REGION = "store_region"          // 既存：都道府県別の店舗一覧（旧仕様）
-    const val STORE_MAP = "store_map"                // 店舗地図（store_Current）
+
     const val STORE_MAP_EXPANDED = "store_map_expanded"  // 店舗内マップ拡大
-    const val GPS_PERMISSION = "gps_permission"      // 位置情報許可ダイアログ
+
 
     // ------------------------
     // 商品・カート・ルート系
@@ -54,8 +52,5 @@ object Routes {
     const val PROFILE_EDIT = "profile_edit"          // 会員情報編集
     const val ORDER_HISTORY = "order_history"        // 購入履歴一覧
 
-    // ------------------------
-    // ヘルプ
-    // ------------------------
-    const val HELP = "help"                          // ヘルプ画面
+
 }
