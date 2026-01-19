@@ -152,6 +152,37 @@ fun RouteScreen(
     var sortedAreaOrder by remember { mutableStateOf<List<String>>(emptyList()) }
     var sortedCartItems by remember { mutableStateOf<List<com.example.supermarket.models.CartItem>>(emptyList()) }
 
+    // -----------------------------------------------------
+    // ★ カテゴリ → エリア対応（表示用・固定）
+    //   - ユーザー要望により、エリア滑块は DB 参照せず固定文字列を表示する
+    //   - 正確なエリア表示は、商品カード右上で行う
+    // -----------------------------------------------------
+    val categoryAreaLabelMap: Map<String, String> = mapOf(
+        "飲料" to "飲料：I",
+        "食品" to "食品：A",
+        "菓子" to "菓子：B",
+        "調味料" to "調味料：C",
+        "日用品" to "日用品：D",
+        "冷蔵" to "冷蔵：E1,E2",
+        "冷凍" to "冷凍：F1,F2",
+        "その他" to "その他：G1,G2,H1,H2"
+    )
+
+    // -----------------------------------------------------
+    // ★ 商品のエリアコード（右上表示用）
+    //   - shelfId があればそれを優先（例：A / B / E1）
+    //   - 無い場合は accessPointId (例：AP_I) から推定
+    // -----------------------------------------------------
+    fun resolveAreaCode(item: com.example.supermarket.models.CartItem): String {
+        val shelf = item.shelfId?.trim()
+        if (!shelf.isNullOrEmpty()) return shelf
+
+        val ap = item.accessPointId?.trim()
+        if (!ap.isNullOrEmpty()) {
+            return ap.removePrefix("AP_")
+        }
+        return "-"
+    }
 
     // ---------------- 注文登録用 ----------------
     val scope = rememberCoroutineScope()
@@ -336,25 +367,47 @@ fun RouteScreen(
                             // ★ ルートに基づいてエリアと商品を並び替え
                             // ========================================
 
-                            // 1. 各アクセスポイントがルート上で何番目に訪問されるかを記録
+                            // 1. 各アクセスポイントがルート上で何番目に訪問されるかを記録（安定版）
                             val apToIndex = mutableMapOf<String, Int>()
                             val layout = storeLayout!!
 
+// ★ route ノードID → 訪問順 index（確実に一致するキー）
+                            val nodeIdToIndex = mutableMapOf<String, Int>()
                             routeProducts.forEachIndexed { index, node ->
-                                // このノードに対応するアクセスポイントを探す
-                                layout.access_points.forEach { ap ->
-                                    val distance = kotlin.math.sqrt(
-                                        (node.x - ap.x) * (node.x - ap.x) +
-                                                (node.y - ap.y) * (node.y - ap.y)
-                                    )
-                                    // 非常に近い場合、このノードはこのAPに対応
-                                    if (distance < 0.01f && !apToIndex.containsKey(ap.accessPointId)) {
-                                        apToIndex[ap.accessPointId] = index
-                                    }
-                                }
+                                nodeIdToIndex[node.nodeId] = index
                             }
 
-                            // 2. 商品をルート訪問順序でソート
+// ★ まず nearestNodeId で確定（最も安定）
+//   nearestNodeId が無い場合のみ距離でフォールバック
+                            layout.access_points.forEach { ap ->
+                                val apId = ap.accessPointId
+                                if (apId.isNullOrEmpty()) return@forEach
+
+                                val nearestId = ap.nearestNodeId
+                                if (!nearestId.isNullOrEmpty()) {
+                                    val idx = nodeIdToIndex[nearestId]
+                                    if (idx != null) {
+                                        apToIndex[apId] = idx
+                                        return@forEach
+                                    }
+                                }
+
+                                // フォールバック：最も近いノードを採用（閾値比較はしない）
+                                var bestIndex = 0
+                                var bestDist = Float.MAX_VALUE
+                                routeProducts.forEachIndexed { index, node ->
+                                    val dx = node.x - ap.x
+                                    val dy = node.y - ap.y
+                                    val d = kotlin.math.sqrt(dx * dx + dy * dy)
+                                    if (d < bestDist) {
+                                        bestDist = d
+                                        bestIndex = index
+                                    }
+                                }
+                                apToIndex[apId] = bestIndex
+                            }
+
+// 2. 商品をルート訪問順序でソート
                             val itemsWithOrder = targetItems.map { item ->
                                 val apId = item.accessPointId ?: ""
                                 val order = apToIndex[apId] ?: Int.MAX_VALUE
@@ -363,7 +416,7 @@ fun RouteScreen(
 
                             sortedCartItems = itemsWithOrder.map { it.first }
 
-                            // 3. エリア（カテゴリ）もルート訪問順序でソート
+// 3. カテゴリ（漢字）をルート訪問順序でソート（★ここが重要）
                             val categoryToMinOrder = mutableMapOf<String, Int>()
                             itemsWithOrder.forEach { (item, order) ->
                                 val cat = item.category
@@ -375,7 +428,6 @@ fun RouteScreen(
                             sortedAreaOrder = categoryToMinOrder.entries
                                 .sortedBy { it.value }
                                 .map { it.key }
-
                         }
 
 
@@ -747,6 +799,7 @@ fun RouteScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     sortedAreaOrder.forEach { id ->
+                        val label = categoryAreaLabelMap[id] ?: id
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             tonalElevation = 2.dp,
@@ -756,10 +809,11 @@ fun RouteScreen(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = id)
+                                Text(text = label)
                             }
                         }
                     }
+
 
                 }
             }
@@ -792,44 +846,63 @@ fun RouteScreen(
                                 .height(90.dp),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(6.dp),
-                                verticalArrangement = Arrangement.SpaceBetween
+                                    .padding(6.dp)
                             ) {
-                                // 商品名（1〜2行程度）
-                                Text(
-                                    text = item.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2
-                                )
 
-                                // 数量のみ表示
-                                Text(
-                                    text = "数量：${item.quantity}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-
-                                // チェックボックス（右下）
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                // ---------------- 商品内容（既存） ----------------
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "購入",
+                                        text = item.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 2
+                                    )
+
+                                    Text(
+                                        text = "数量：${item.quantity}",
                                         style = MaterialTheme.typography.bodySmall
                                     )
-                                    Checkbox(
-                                        checked = checked,
-                                        onCheckedChange = { newChecked ->
-                                            checkedMap[item.productId] = newChecked
-                                        }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "購入",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = { newChecked ->
+                                                checkedMap[item.productId] = newChecked
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // ---------------- エリア表示（右上） ----------------
+                                val areaCode = resolveAreaCode(item)
+                                Surface(
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    shape = RoundedCornerShape(8.dp),
+                                    tonalElevation = 2.dp,
+                                    color = MaterialTheme.colorScheme.secondaryContainer
+                                ) {
+                                    Text(
+                                        text = areaCode,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
                         }
+
                     }
                 }
             }
